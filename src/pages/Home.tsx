@@ -161,8 +161,61 @@ export default function Home() {
         </div>
       </section>
 
+      {/* For Authors & Reviewers Section */}
+      <section className="py-16 bg-white border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">For Authors & Reviewers</h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Everything you need to know about publishing with the Uganda Medical Association Journal.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="text-center pb-2">
+                <div className="mx-auto w-12 h-12 bg-blue-50 text-blue-700 rounded-full flex items-center justify-center mb-4">
+                  <FileText className="h-6 w-6" />
+                </div>
+                <CardTitle className="text-2xl text-slate-900">Manuscript Submission</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center text-slate-600">
+                <p className="mb-6">
+                  Ready to share your research? Review our author guidelines and submit your manuscript through our online portal. We accept original research, reviews, case reports, and letters to the editor.
+                </p>
+                <div className="flex flex-col sm:flex-row justify-center gap-3">
+                  <Link to="/author-guidelines" className={buttonVariants({ variant: "outline", className: "w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50" })}>
+                    Author Guidelines
+                  </Link>
+                  <Link to="/submit" className={buttonVariants({ variant: "default", className: "bg-blue-700 hover:bg-blue-800 w-full sm:w-auto" })}>
+                    Submit Manuscript
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="text-center pb-2">
+                <div className="mx-auto w-12 h-12 bg-blue-50 text-blue-700 rounded-full flex items-center justify-center mb-4">
+                  <Users className="h-6 w-6" />
+                </div>
+                <CardTitle className="text-2xl text-slate-900">Editorial Information</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center text-slate-600">
+                <p className="mb-6">
+                  Learn about our rigorous double-blind peer review process, our editorial policies, and meet the distinguished members of our editorial board who guide the journal's scientific direction.
+                </p>
+                <Link to="/editorial-board" className={buttonVariants({ variant: "outline", className: "w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50" })}>
+                  Meet the Editorial Board
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Call to Action */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-blue-50 border-t border-blue-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">Call for Papers</h2>
           <p className="text-lg text-slate-600 mb-8">

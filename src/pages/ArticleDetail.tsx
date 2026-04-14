@@ -5,7 +5,8 @@ import { db } from '@/lib/firebase';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Download, FileText, Share2, Quote } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
+import { ArrowLeft, Download, FileText, Share2, Quote, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Article {
@@ -20,12 +21,16 @@ interface Article {
   doi?: string;
   pdfUrl?: string;
   views?: number;
+  isOpenAccess?: boolean;
 }
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user, profile } = useAuth();
+
+  const isSubscribed = user && profile && ['subscribed_reader', 'institutional', 'admin', 'editor', 'reviewer', 'author'].includes(profile.role);
 
   // Dummy data fallback
   const dummyArticles: Record<string, Article> = {
@@ -40,7 +45,8 @@ export default function ArticleDetail() {
       publishedAt: new Date('2023-10-15').toISOString(),
       doi: '10.1234/umaj.2023.45.3.01',
       pdfUrl: '#',
-      views: 1245
+      views: 1245,
+      isOpenAccess: false
     }
   };
 
@@ -132,10 +138,17 @@ export default function ArticleDetail() {
           {/* Action Bar */}
           <div className="bg-slate-50 px-8 py-4 border-b border-slate-200 flex flex-wrap gap-4 items-center justify-between">
             <div className="flex gap-3">
-              <Button className="bg-blue-700 hover:bg-blue-800 text-white">
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
+              {article.isOpenAccess || isSubscribed ? (
+                <Button className="bg-blue-700 hover:bg-blue-800 text-white">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+              ) : (
+                <Button disabled className="bg-slate-300 text-slate-500 cursor-not-allowed">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Subscription Required
+                </Button>
+              )}
               <Button variant="outline" className="bg-white">
                 <Quote className="mr-2 h-4 w-4" />
                 Cite
@@ -169,6 +182,34 @@ export default function ArticleDetail() {
                 return <p key={idx} className="mb-4 text-slate-700 leading-relaxed">{paragraph}</p>;
               })}
             </div>
+
+            {!(article.isOpenAccess || isSubscribed) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center my-8">
+                <Lock className="mx-auto h-8 w-8 text-blue-600 mb-3" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Full Text Access Restricted</h3>
+                <p className="text-slate-600 mb-4">
+                  This article is not open access. You need an active subscription to view the full text and download the PDF.
+                </p>
+                <Link to="/about" className={buttonVariants({ className: "bg-blue-700 hover:bg-blue-800 text-white" })}>
+                  View Subscription Options
+                </Link>
+              </div>
+            )}
+
+            {(article.isOpenAccess || isSubscribed) && (
+              <>
+                <Separator className="my-8" />
+                <h2 className="text-2xl font-bold text-slate-900 mb-6">Full Text</h2>
+                <div className="prose prose-slate max-w-none mb-10">
+                  <p className="text-slate-700 leading-relaxed italic">
+                    [Full text content would be displayed here for subscribed users or open access articles. This is a placeholder.]
+                  </p>
+                  <p className="text-slate-700 leading-relaxed">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                  </p>
+                </div>
+              </>
+            )}
 
             <Separator className="my-8" />
 

@@ -8,6 +8,8 @@ import Submit from './pages/Submit';
 import Dashboard from './pages/Dashboard';
 import EditorialBoard from './pages/EditorialBoard';
 import About from './pages/About';
+import Archive from './pages/Archive';
+import AuthorGuidelines from './pages/AuthorGuidelines';
 import { Toaster } from '@/components/ui/sonner';
 
 export default function App() {
@@ -19,7 +21,9 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="articles" element={<Articles />} />
             <Route path="articles/:id" element={<ArticleDetail />} />
+            <Route path="archive" element={<Archive />} />
             <Route path="submit" element={<Submit />} />
+            <Route path="author-guidelines" element={<AuthorGuidelines />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="editorial-board" element={<EditorialBoard />} />
             <Route path="about" element={<About />} />

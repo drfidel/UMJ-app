@@ -161,7 +161,9 @@ export default function Submit() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Submit Manuscript</h1>
-          <p className="text-slate-600">Please fill out the form below to submit your research for peer review.</p>
+          <p className="text-slate-600">
+            Please fill out the form below to submit your research for peer review. Ensure you have read our <Link to="/author-guidelines" className="text-blue-700 hover:underline font-medium">Author Guidelines</Link> before submitting.
+          </p>
         </div>
 
         <Card className="border-slate-200 shadow-sm">

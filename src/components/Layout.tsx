@@ -20,6 +20,7 @@ export default function Layout() {
 
   const navLinks = [
     { name: 'Articles', path: '/articles' },
+    { name: 'Archive', path: '/archive' },
     { name: 'Submit Manuscript', path: '/submit' },
     { name: 'Editorial Board', path: '/editorial-board' },
     { name: 'About', path: '/about' },

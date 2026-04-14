@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, FileText } from 'lucide-react';
+import { Search, Filter, FileText, Lock, Unlock } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Article {
@@ -19,6 +19,7 @@ interface Article {
   volume: number;
   issue: number;
   publishedAt: string;
+  isOpenAccess?: boolean;
 }
 
 export default function Articles() {
@@ -38,6 +39,7 @@ export default function Articles() {
       volume: 45,
       issue: 3,
       publishedAt: new Date('2023-10-15').toISOString(),
+      isOpenAccess: false,
     },
     {
       id: '2',
@@ -48,6 +50,7 @@ export default function Articles() {
       volume: 45,
       issue: 3,
       publishedAt: new Date('2023-11-02').toISOString(),
+      isOpenAccess: true,
     },
     {
       id: '3',
@@ -58,6 +61,7 @@ export default function Articles() {
       volume: 45,
       issue: 2,
       publishedAt: new Date('2023-08-10').toISOString(),
+      isOpenAccess: true,
     },
     {
       id: '4',
@@ -68,6 +72,7 @@ export default function Articles() {
       volume: 44,
       issue: 4,
       publishedAt: new Date('2022-12-05').toISOString(),
+      isOpenAccess: false,
     }
   ];
 
@@ -159,10 +164,19 @@ export default function Articles() {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start gap-4">
                   <div>
-                    <CardTitle className="text-xl text-blue-900 hover:text-blue-700 transition-colors mb-2">
-                      <Link to={`/articles/${article.id}`}>
+                    <CardTitle className="text-xl text-blue-900 hover:text-blue-700 transition-colors mb-2 flex items-start justify-between gap-4">
+                      <Link to={`/articles/${article.id}`} className="flex-grow">
                         {article.title}
                       </Link>
+                      {article.isOpenAccess ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 whitespace-nowrap flex-shrink-0">
+                          <Unlock className="w-3 h-3 mr-1" /> Open Access
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 whitespace-nowrap flex-shrink-0">
+                          <Lock className="w-3 h-3 mr-1" /> Subscription
+                        </Badge>
+                      )}
                     </CardTitle>
                     <CardDescription className="text-slate-700 font-medium text-base">
                       {article.authors.join(', ')}
