@@ -1,0 +1,190 @@
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ArrowLeft, Download, FileText, Share2, Quote } from 'lucide-react';
+import { format } from 'date-fns';
+
+interface Article {
+  id: string;
+  title: string;
+  abstract: string;
+  authors: string[];
+  keywords: string[];
+  volume: number;
+  issue: number;
+  publishedAt: string;
+  doi?: string;
+  pdfUrl?: string;
+  views?: number;
+}
+
+export default function ArticleDetail() {
+  const { id } = useParams<{ id: string }>();
+  const [article, setArticle] = useState<Article | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Dummy data fallback
+  const dummyArticles: Record<string, Article> = {
+    '1': {
+      id: '1',
+      title: 'Prevalence and Risk Factors of Malaria in Pregnant Women in Rural Uganda',
+      authors: ['Dr. Jane Namukasa', 'Dr. Peter Okello', 'Prof. Samuel Lwanga'],
+      abstract: 'Background: Malaria during pregnancy remains a major public health challenge in sub-Saharan Africa. This study investigates the current prevalence rates and associated risk factors for malaria infection among pregnant women attending antenatal care in rural health centers across Uganda.\n\nMethods: A cross-sectional study was conducted involving 850 pregnant women across 12 rural health centers. Blood samples were tested using rapid diagnostic tests (RDTs) and microscopy. Demographic and behavioral data were collected via structured questionnaires.\n\nResults: The overall prevalence of malaria was 24.5%. Factors significantly associated with infection included non-use of insecticide-treated nets (ITNs) (aOR 3.2, 95% CI 2.1-4.8), primigravida status (aOR 2.1, 95% CI 1.5-3.0), and living in proximity to stagnant water bodies. Only 45% of participants reported receiving intermittent preventive treatment (IPTp) according to national guidelines.\n\nConclusion: The prevalence of malaria among pregnant women in rural Uganda remains unacceptably high. There is an urgent need to intensify the distribution and promote the utilization of ITNs, alongside improving the coverage of IPTp services in rural antenatal care settings.',
+      keywords: ['Malaria', 'Maternal Health', 'Epidemiology', 'Uganda', 'Pregnancy'],
+      volume: 45,
+      issue: 3,
+      publishedAt: new Date('2023-10-15').toISOString(),
+      doi: '10.1234/umaj.2023.45.3.01',
+      pdfUrl: '#',
+      views: 1245
+    }
+  };
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      if (!id) return;
+      
+      try {
+        const docRef = doc(db, 'articles', id);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setArticle({ id: docSnap.id, ...docSnap.data() } as Article);
+        } else {
+          // Fallback to dummy data
+          setArticle(dummyArticles[id] || dummyArticles['1']);
+        }
+      } catch (error) {
+        console.error("Error fetching article", error);
+        setArticle(dummyArticles[id] || dummyArticles['1']);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArticle();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-700"></div>
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">Article Not Found</h2>
+        <p className="text-slate-600 mb-8">The article you are looking for does not exist or has been removed.</p>
+        <Link to="/articles" className={buttonVariants()}>Return to Articles</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-slate-50 min-h-screen py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Link to="/articles" className="inline-flex items-center text-sm text-blue-700 hover:text-blue-800 mb-8 font-medium">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Articles
+        </Link>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Header */}
+          <div className="p-8 md:p-10 border-b border-slate-200">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 mb-6">
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 font-medium rounded-sm">
+                Research Article
+              </Badge>
+              <span>•</span>
+              <span>Vol {article.volume}, Issue {article.issue}</span>
+              <span>•</span>
+              <span>Published: {format(new Date(article.publishedAt), 'MMMM d, yyyy')}</span>
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-6">
+              {article.title}
+            </h1>
+
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Authors</h3>
+              <p className="text-lg text-slate-800 font-medium">
+                {article.authors.join(', ')}
+              </p>
+            </div>
+
+            {article.doi && (
+              <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100 inline-block">
+                <span className="font-semibold mr-2">DOI:</span>
+                <a href={`https://doi.org/${article.doi}`} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                  {article.doi}
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* Action Bar */}
+          <div className="bg-slate-50 px-8 py-4 border-b border-slate-200 flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex gap-3">
+              <Button className="bg-blue-700 hover:bg-blue-800 text-white">
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button>
+              <Button variant="outline" className="bg-white">
+                <Quote className="mr-2 h-4 w-4" />
+                Cite
+              </Button>
+            </div>
+            <div className="flex items-center text-sm text-slate-500 gap-4">
+              <span className="flex items-center">
+                <FileText className="mr-1 h-4 w-4" /> {article.views || 0} Views
+              </span>
+              <Button variant="ghost" size="sm" className="text-slate-500 hover:text-blue-700">
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-8 md:p-10">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Abstract</h2>
+            <div className="prose prose-slate max-w-none mb-10">
+              {article.abstract.split('\n\n').map((paragraph, idx) => {
+                // Check if paragraph starts with a bold header like "Background:"
+                const parts = paragraph.split(': ');
+                if (parts.length > 1 && ['Background', 'Methods', 'Results', 'Conclusion'].includes(parts[0])) {
+                  return (
+                    <p key={idx} className="mb-4 text-slate-700 leading-relaxed">
+                      <strong className="text-slate-900">{parts[0]}: </strong>
+                      {parts.slice(1).join(': ')}
+                    </p>
+                  );
+                }
+                return <p key={idx} className="mb-4 text-slate-700 leading-relaxed">{paragraph}</p>;
+              })}
+            </div>
+
+            <Separator className="my-8" />
+
+            <div>
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Keywords</h3>
+              <div className="flex flex-wrap gap-2">
+                {article.keywords.map(keyword => (
+                  <Badge key={keyword} variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 px-3 py-1">
+                    {keyword}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

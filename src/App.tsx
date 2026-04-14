@@ -1,0 +1,32 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './lib/AuthContext';
+import Layout from './components/Layout';
+import Home from './pages/Home';
+import Articles from './pages/Articles';
+import ArticleDetail from './pages/ArticleDetail';
+import Submit from './pages/Submit';
+import Dashboard from './pages/Dashboard';
+import EditorialBoard from './pages/EditorialBoard';
+import About from './pages/About';
+import { Toaster } from '@/components/ui/sonner';
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="articles" element={<Articles />} />
+            <Route path="articles/:id" element={<ArticleDetail />} />
+            <Route path="submit" element={<Submit />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="editorial-board" element={<EditorialBoard />} />
+            <Route path="about" element={<About />} />
+          </Route>
+        </Routes>
+        <Toaster position="top-right" />
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}

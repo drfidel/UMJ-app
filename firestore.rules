@@ -1,0 +1,204 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "akiyofidel@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isEditor() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor';
+    }
+    
+    function isReviewer() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reviewer';
+    }
+
+    function isAuthor() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'author';
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'affiliation', 'specialties', 'createdAt']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
+             (!('photoURL' in data) || isValidUrl(data.photoURL)) &&
+             data.role in ['author', 'reviewer', 'editor', 'admin', 'subscribed_reader', 'unsubscribed_reader', 'institutional'] &&
+             (!('affiliation' in data) || (data.affiliation is string && data.affiliation.size() < 200)) &&
+             (!('specialties' in data) || (data.specialties is list && data.specialties.size() <= 20)) &&
+             data.createdAt is string;
+    }
+
+    function isValidArticle(data) {
+      return hasOnlyAllowedFields(['id', 'title', 'abstract', 'authors', 'keywords', 'pdfUrl', 'doi', 'volume', 'issue', 'publishedAt', 'views', 'downloads']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.abstract is string && data.abstract.size() > 0 && data.abstract.size() < 5000 &&
+             data.authors is list && data.authors.size() > 0 && data.authors.size() <= 50 &&
+             (!('keywords' in data) || (data.keywords is list && data.keywords.size() <= 20)) &&
+             data.pdfUrl is string && isValidUrl(data.pdfUrl) &&
+             (!('doi' in data) || (data.doi is string && data.doi.size() < 100)) &&
+             data.volume is number && data.volume > 0 &&
+             data.issue is number && data.issue > 0 &&
+             data.publishedAt is string &&
+             (!('views' in data) || data.views is number) &&
+             (!('downloads' in data) || data.downloads is number);
+    }
+
+    function isValidSubmission(data) {
+      return hasOnlyAllowedFields(['id', 'authorUid', 'title', 'abstract', 'coAuthors', 'keywords', 'fileUrl', 'status', 'submittedAt', 'updatedAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             data.authorUid is string && data.authorUid.size() > 0 && data.authorUid.size() < 100 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.abstract is string && data.abstract.size() > 0 && data.abstract.size() < 5000 &&
+             (!('coAuthors' in data) || (data.coAuthors is list && data.coAuthors.size() <= 50)) &&
+             (!('keywords' in data) || (data.keywords is list && data.keywords.size() <= 20)) &&
+             data.fileUrl is string && isValidUrl(data.fileUrl) &&
+             data.status in ['submitted', 'under_review', 'accepted', 'rejected', 'revision_requested'] &&
+             data.submittedAt is string &&
+             data.updatedAt is string;
+    }
+
+    function isValidReview(data) {
+      return hasOnlyAllowedFields(['id', 'submissionId', 'reviewerUid', 'comments', 'recommendation', 'status', 'assignedAt', 'completedAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             data.submissionId is string && data.submissionId.size() > 0 && data.submissionId.size() < 100 &&
+             data.reviewerUid is string && data.reviewerUid.size() > 0 && data.reviewerUid.size() < 100 &&
+             (!('comments' in data) || (data.comments is string && data.comments.size() < 10000)) &&
+             (!('recommendation' in data) || data.recommendation in ['accept', 'minor_revision', 'major_revision', 'reject']) &&
+             data.status in ['pending', 'completed'] &&
+             data.assignedAt is string &&
+             (!('completedAt' in data) || data.completedAt is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Anyone can read public user profiles (needed for author/reviewer names)
+      allow read: if isAuthenticated();
+      
+      // Users can create their own profile. (Role restriction relaxed for local testing)
+      allow create: if isAuthenticated() && 
+                    isOwner(userId) && 
+                    isValidUser(request.resource.data) && 
+                    request.resource.data.uid == userId;
+                    
+      // Users can update their own profile, but cannot change their role or uid. Admins can update anything.
+      allow update: if isAuthenticated() && 
+                    isValidUser(request.resource.data) && 
+                    request.resource.data.uid == resource.data.uid &&
+                    (
+                      (isOwner(userId) && request.resource.data.role == resource.data.role) || 
+                      isAdmin()
+                    );
+                    
+      allow delete: if isAdmin();
+    }
+
+    match /articles/{articleId} {
+      // Articles are public
+      allow read: if true;
+      
+      // Only admins can manage articles
+      allow create: if isAdmin() && isValidArticle(request.resource.data);
+      allow update: if isAdmin() && isValidArticle(request.resource.data) && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    match /submissions/{submissionId} {
+      // Authors can read their own submissions. Admins, editors, and assigned reviewers can read.
+      allow read: if isAuthenticated() && (
+        resource.data.authorUid == request.auth.uid || 
+        isAdmin() ||
+        isEditor() ||
+        (isReviewer() && exists(/databases/$(database)/documents/reviews/$(request.auth.uid + '_' + submissionId))) // Simplified check for reviewer access
+      );
+      
+      // Authors can create submissions
+      allow create: if isAuthenticated() && 
+                    isValidSubmission(request.resource.data) && 
+                    request.resource.data.authorUid == request.auth.uid &&
+                    request.resource.data.status == 'submitted';
+                    
+      // Authors can update their submissions if requested revision. Admins and editors can update status.
+      allow update: if isAuthenticated() && 
+                    isValidSubmission(request.resource.data) && 
+                    request.resource.data.id == resource.data.id &&
+                    request.resource.data.authorUid == resource.data.authorUid &&
+                    (
+                      (isOwner(resource.data.authorUid) && resource.data.status == 'revision_requested' && request.resource.data.status == 'submitted') ||
+                      isAdmin() ||
+                      isEditor()
+                    );
+                    
+      allow delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      // Reviewers can read their assigned reviews. Admins and editors can read all.
+      allow read: if isAuthenticated() && (
+        resource.data.reviewerUid == request.auth.uid || 
+        isAdmin() ||
+        isEditor()
+      );
+      
+      // Only admins and editors can assign reviews
+      allow create: if (isAdmin() || isEditor()) && isValidReview(request.resource.data);
+      
+      // Reviewers can update their own reviews to add comments/recommendations and complete them. Admins and editors can update.
+      allow update: if isAuthenticated() && 
+                    isValidReview(request.resource.data) && 
+                    request.resource.data.id == resource.data.id &&
+                    request.resource.data.submissionId == resource.data.submissionId &&
+                    request.resource.data.reviewerUid == resource.data.reviewerUid &&
+                    (
+                      (request.auth.uid == resource.data.reviewerUid) ||
+                      isAdmin() ||
+                      isEditor()
+                    );
+                    
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,249 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { useAuth } from '@/lib/AuthContext';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertCircle, Upload, CheckCircle2, FileText } from 'lucide-react';
+import { toast } from 'sonner';
+
+const formSchema = z.object({
+  title: z.string().min(10, 'Title must be at least 10 characters.').max(500, 'Title is too long.'),
+  abstract: z.string().min(100, 'Abstract must be at least 100 characters.').max(5000, 'Abstract is too long.'),
+  coAuthors: z.string().optional(),
+  keywords: z.string().min(3, 'Please provide at least one keyword.'),
+});
+
+export default function Submit() {
+  const { user, profile, signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [file, setFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: '',
+      abstract: '',
+      coAuthors: '',
+      keywords: '',
+    },
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      // Check file type (PDF or DOCX)
+      if (selectedFile.type === 'application/pdf' || 
+          selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        setFile(selectedFile);
+      } else {
+        toast.error('Invalid file type. Please upload a PDF or DOCX file.');
+        e.target.value = '';
+      }
+    }
+  };
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!user || !profile) {
+      toast.error('You must be logged in to submit a manuscript.');
+      return;
+    }
+
+    if (!file) {
+      toast.error('Please upload your manuscript file.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 1. Upload file to Storage
+      const fileRef = ref(storage, `manuscripts/${user.uid}/${Date.now()}_${file.name}`);
+      await uploadBytes(fileRef, file);
+      const fileUrl = await getDownloadURL(fileRef);
+
+      // 2. Process keywords and co-authors
+      const keywordsList = values.keywords.split(',').map(k => k.trim()).filter(k => k);
+      const coAuthorsList = values.coAuthors ? values.coAuthors.split(',').map(a => a.trim()).filter(a => a) : [];
+
+      // 3. Save to Firestore
+      const submissionData = {
+        id: crypto.randomUUID(), // Generate a unique ID for the document data
+        authorUid: user.uid,
+        title: values.title,
+        abstract: values.abstract,
+        coAuthors: coAuthorsList,
+        keywords: keywordsList,
+        fileUrl,
+        status: 'submitted',
+        submittedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await addDoc(collection(db, 'submissions'), submissionData);
+
+      setIsSuccess(true);
+      toast.success('Manuscript submitted successfully!');
+      
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error('Failed to submit manuscript. Please try again.');
+      // Don't use handleFirestoreError here as it throws and breaks the UI flow, 
+      // just log it or handle it gracefully if it's a known error.
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-20">
+        <Card className="text-center py-12">
+          <CardHeader>
+            <div className="mx-auto w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+            <CardTitle className="text-2xl">Authentication Required</CardTitle>
+            <CardDescription className="text-lg mt-2">
+              You must be logged in to submit a manuscript to UMAJ.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={signInWithGoogle} size="lg" className="bg-blue-700 hover:bg-blue-800 text-white mt-4">
+              Log In with Google
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-20">
+        <Card className="text-center py-12 border-green-200 bg-green-50">
+          <CardHeader>
+            <div className="mx-auto w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="h-8 w-8" />
+            </div>
+            <CardTitle className="text-2xl text-green-800">Submission Successful!</CardTitle>
+            <CardDescription className="text-lg mt-2 text-green-700">
+              Your manuscript has been received and is now under editorial review.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center gap-4 mt-6">
+            <Link to="/dashboard" className={buttonVariants({ variant: "outline", className: "bg-white" })}>Go to Dashboard</Link>
+            <Button onClick={() => {
+              form.reset();
+              setFile(null);
+              setIsSuccess(false);
+            }} className="bg-blue-700 hover:bg-blue-800 text-white">
+              Submit Another
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-slate-50 min-h-screen py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Submit Manuscript</h1>
+          <p className="text-slate-600">Please fill out the form below to submit your research for peer review.</p>
+        </div>
+
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="bg-white border-b border-slate-100 pb-6">
+            <CardTitle>Manuscript Details</CardTitle>
+            <CardDescription>All fields marked with an asterisk (*) are required.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 bg-white">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-slate-900 font-semibold">Manuscript Title *</Label>
+                <Input id="title" placeholder="Enter the full title of your manuscript" className="bg-slate-50" {...form.register('title')} />
+                {form.formState.errors.title && <p className="text-sm text-red-500">{form.formState.errors.title.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="abstract" className="text-slate-900 font-semibold">Abstract *</Label>
+                <Textarea 
+                  id="abstract"
+                  placeholder="Paste your abstract here (100-500 words recommended)" 
+                  className="min-h-[200px] bg-slate-50" 
+                  {...form.register('abstract')} 
+                />
+                <p className="text-sm text-slate-500">Include Background, Methods, Results, and Conclusion.</p>
+                {form.formState.errors.abstract && <p className="text-sm text-red-500">{form.formState.errors.abstract.message}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label htmlFor="coAuthors" className="text-slate-900 font-semibold">Co-Authors</Label>
+                  <Input id="coAuthors" placeholder="e.g., John Doe, Jane Smith" className="bg-slate-50" {...form.register('coAuthors')} />
+                  <p className="text-sm text-slate-500">Comma-separated list of co-authors. You are automatically included as the primary author.</p>
+                  {form.formState.errors.coAuthors && <p className="text-sm text-red-500">{form.formState.errors.coAuthors.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="keywords" className="text-slate-900 font-semibold">Keywords *</Label>
+                  <Input id="keywords" placeholder="e.g., Malaria, Public Health, Uganda" className="bg-slate-50" {...form.register('keywords')} />
+                  <p className="text-sm text-slate-500">Comma-separated list of 3-5 keywords.</p>
+                  {form.formState.errors.keywords && <p className="text-sm text-red-500">{form.formState.errors.keywords.message}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-slate-900 font-semibold">Manuscript File *</Label>
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                  />
+                  <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                    <Upload className="h-10 w-10 text-slate-400 mb-3" />
+                    <span className="text-sm font-medium text-blue-700 mb-1">Click to upload</span>
+                    <span className="text-xs text-slate-500">PDF or DOCX (Max 10MB)</span>
+                  </label>
+                  {file && (
+                    <div className="mt-4 p-3 bg-white rounded border border-slate-200 text-sm text-slate-700 font-medium flex items-center justify-center">
+                      <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                      {file.name}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 flex justify-end">
+                <Button 
+                  type="submit" 
+                  size="lg" 
+                  className="bg-blue-700 hover:bg-blue-800 text-white min-w-[150px]"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Manuscript'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
