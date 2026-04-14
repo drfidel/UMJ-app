@@ -39,24 +39,40 @@ export default function Home() {
       <section className="bg-blue-900 text-white py-20 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[url('https://picsum.photos/seed/medical/1920/1080')] bg-cover bg-center mix-blend-overlay"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-3xl">
-            <Badge className="bg-red-600 hover:bg-red-700 text-white mb-6 px-3 py-1 text-sm">
-              Volume 45, Issue 3 Now Available
-            </Badge>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-              Advancing Medical Research & Practice in Uganda
-            </h1>
-            <p className="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl leading-relaxed">
-              The official publication of the Uganda Medical Association, dedicated to disseminating high-quality, peer-reviewed research to improve healthcare outcomes across the region.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/articles" className={buttonVariants({ size: "lg", className: "bg-white text-blue-900 hover:bg-slate-100 font-semibold" })}>
-                  Read Latest Articles
-                  <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-              <Link to="/submit" className={buttonVariants({ size: "lg", variant: "outline", className: "text-white border-white hover:bg-white/10 font-semibold" })}>
-                  Submit Manuscript
-              </Link>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="max-w-3xl">
+              <Badge className="bg-red-600 hover:bg-red-700 text-white mb-6 px-3 py-1 text-sm">
+                Volume 45, Issue 3 Now Available
+              </Badge>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                Advancing Medical Research & Practice in Uganda
+              </h1>
+              <p className="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl leading-relaxed">
+                The official publication of the Uganda Medical Association, dedicated to disseminating high-quality, peer-reviewed research to improve healthcare outcomes across the region.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link to="/articles" className={buttonVariants({ size: "lg", className: "bg-white text-blue-900 hover:bg-slate-100 font-semibold" })}>
+                    Read Latest Articles
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+                <Link to="/submit" className={buttonVariants({ size: "lg", variant: "outline", className: "text-white border-white hover:bg-white/10 font-semibold" })}>
+                    Submit Manuscript
+                </Link>
+              </div>
+            </div>
+            <div className="hidden lg:flex justify-end">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-blue-400 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-500"></div>
+                <img 
+                  src="https://picsum.photos/seed/medical-journal/400/550" 
+                  alt="Latest Journal Cover" 
+                  className="relative rounded-lg shadow-2xl border border-blue-800/50 w-[350px] object-cover transform transition duration-500 hover:scale-[1.02]"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute top-4 right-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-20">
+                  LATEST ISSUE
+                </div>
+              </div>
             </div>
           </div>
         </div>

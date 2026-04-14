@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, setDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -19,6 +20,11 @@ export default function Dashboard() {
   const [dataLoading, setDataLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [availableReviewers, setAvailableReviewers] = useState<any[]>([]);
+  const [isAssignReviewerOpen, setIsAssignReviewerOpen] = useState(false);
+  const [submissionToAssign, setSubmissionToAssign] = useState<any | null>(null);
+  const [selectedReviewerId, setSelectedReviewerId] = useState<string>('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const isStaff = profile?.role === 'admin' || profile?.role === 'editor';
   const isReviewer = profile?.role === 'reviewer' || isStaff;
@@ -82,6 +88,12 @@ export default function Dashboard() {
               }
             ]);
           }
+          if (isStaff) {
+            setAvailableReviewers([
+              { uid: 'rev-user-1', displayName: 'Dr. Jane Smith', email: 'jane@example.com', specialties: ['AI', 'Machine Learning'] },
+              { uid: 'rev-user-2', displayName: 'Prof. Alan Turing', email: 'alan@example.com', specialties: ['Computer Science', 'Cryptography'] }
+            ]);
+          }
           setDataLoading(false);
         }, 500);
         return;
@@ -111,7 +123,7 @@ export default function Dashboard() {
           setReviews(revSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         }
 
-        // If Admin/Editor, fetch all pending submissions
+        // If Admin/Editor, fetch all pending submissions and available reviewers
         if (isStaff) {
            const adminQuery = query(
             collection(db, 'submissions'),
@@ -125,6 +137,14 @@ export default function Dashboard() {
             .filter(s => !existingIds.has(s.id));
           
           setSubmissions(prev => [...prev, ...adminSubs].sort((a: any, b: any) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()));
+
+          // Fetch available reviewers
+          const reviewersQuery = query(
+            collection(db, 'users'),
+            where('role', '==', 'reviewer')
+          );
+          const reviewersSnap = await getDocs(reviewersQuery);
+          setAvailableReviewers(reviewersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
         }
 
       } catch (error) {
@@ -146,6 +166,55 @@ export default function Dashboard() {
   if (!user || !profile) {
     return <Navigate to="/" replace />;
   }
+
+  const handleAssignReviewer = async () => {
+    if (!submissionToAssign || !selectedReviewerId) return;
+
+    setIsAssigning(true);
+    try {
+      if (isDemoMode) {
+        // Mock assignment
+        setTimeout(() => {
+          setIsAssigning(false);
+          setIsAssignReviewerOpen(false);
+          setSubmissionToAssign(null);
+          setSelectedReviewerId('');
+          // Update submission status locally
+          setSubmissions(prev => prev.map(s => s.id === submissionToAssign.id ? { ...s, status: 'under_review' } : s));
+        }, 500);
+        return;
+      }
+
+      const reviewId = `${submissionToAssign.id}_${selectedReviewerId}`;
+      const newReview = {
+        id: reviewId,
+        submissionId: submissionToAssign.id,
+        reviewerUid: selectedReviewerId,
+        status: 'pending',
+        assignedAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, 'reviews', reviewId), newReview);
+      
+      // Update submission status to under_review
+      await setDoc(doc(db, 'submissions', submissionToAssign.id), {
+        ...submissionToAssign,
+        status: 'under_review',
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setSubmissions(prev => prev.map(s => s.id === submissionToAssign.id ? { ...s, status: 'under_review' } : s));
+      
+      setIsAssignReviewerOpen(false);
+      setSubmissionToAssign(null);
+      setSelectedReviewerId('');
+    } catch (error) {
+      console.error("Error assigning reviewer", error);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -338,7 +407,17 @@ export default function Dashboard() {
                             {getStatusBadge(sub.status)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="outline" size="sm" className="mr-2">Assign Reviewer</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mr-2"
+                              onClick={() => {
+                                setSubmissionToAssign(sub);
+                                setIsAssignReviewerOpen(true);
+                              }}
+                            >
+                              Assign Reviewer
+                            </Button>
                             <Button variant="ghost" size="sm" className="text-blue-700">Manage</Button>
                           </TableCell>
                         </TableRow>
@@ -435,6 +514,66 @@ export default function Dashboard() {
                 Submit Revision
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAssignReviewerOpen} onOpenChange={setIsAssignReviewerOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Assign Reviewer</DialogTitle>
+            <DialogDescription>
+              Select a reviewer to assign to this manuscript.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {submissionToAssign && (
+            <div className="space-y-4 py-4">
+              <div>
+                <h4 className="text-sm font-medium text-slate-500 mb-1">Manuscript</h4>
+                <p className="text-sm font-medium text-slate-900 line-clamp-2">{submissionToAssign.title}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-slate-500">Select Reviewer</h4>
+                <Select value={selectedReviewerId} onValueChange={setSelectedReviewerId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a reviewer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableReviewers.length > 0 ? (
+                      availableReviewers.map((reviewer) => (
+                        <SelectItem key={reviewer.uid} value={reviewer.uid}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{reviewer.displayName}</span>
+                            {reviewer.specialties && reviewer.specialties.length > 0 && (
+                              <span className="text-xs text-slate-500">
+                                {reviewer.specialties.join(', ')}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>No reviewers available</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignReviewerOpen(false)} disabled={isAssigning}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-blue-700 hover:bg-blue-800 text-white" 
+              onClick={handleAssignReviewer}
+              disabled={!selectedReviewerId || isAssigning}
+            >
+              {isAssigning ? 'Assigning...' : 'Assign Reviewer'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
