@@ -85,7 +85,7 @@ service cloud.firestore {
     }
 
     function isValidSubmission(data) {
-      return hasOnlyAllowedFields(['id', 'authorUid', 'title', 'abstract', 'coAuthors', 'keywords', 'fileUrl', 'status', 'submittedAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['id', 'authorUid', 'title', 'abstract', 'coAuthors', 'keywords', 'fileUrl', 'status', 'submittedAt', 'updatedAt', 'editorFeedback']) &&
              data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
              data.authorUid is string && data.authorUid.size() > 0 && data.authorUid.size() < 100 &&
              data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
@@ -95,7 +95,8 @@ service cloud.firestore {
              data.fileUrl is string && isValidUrl(data.fileUrl) &&
              data.status in ['submitted', 'under_review', 'accepted', 'rejected', 'revision_requested'] &&
              data.submittedAt is string &&
-             data.updatedAt is string;
+             data.updatedAt is string &&
+             (!('editorFeedback' in data) || (data.editorFeedback is string && data.editorFeedback.size() < 10000));
     }
 
     function isValidReview(data) {

@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Dashboard() {
@@ -16,6 +17,8 @@ export default function Dashboard() {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [selectedSubmission, setSelectedSubmission] = useState<any | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const isStaff = profile?.role === 'admin' || profile?.role === 'editor';
   const isReviewer = profile?.role === 'reviewer' || isStaff;
@@ -39,13 +42,16 @@ export default function Dashboard() {
                 status: 'under_review',
                 submittedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
                 authorUid: user.uid,
+                abstract: 'This paper explores the transformative effects of artificial intelligence in clinical settings, focusing on diagnostic accuracy and patient outcomes.',
               },
               {
                 id: 'sub-2',
                 title: 'Quantum Computing: A Review of Current Algorithms',
-                status: 'submitted',
+                status: 'revision_requested',
                 submittedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
                 authorUid: user.uid,
+                abstract: 'A comprehensive review of quantum algorithms, highlighting their potential advantages over classical counterparts in specific computational domains.',
+                editorFeedback: 'The reviewers found your paper interesting, but it requires major revisions. Please address the comments regarding the scalability of the proposed algorithms and provide more concrete examples in section 3.',
               },
               {
                 id: 'sub-3',
@@ -217,7 +223,15 @@ export default function Dashboard() {
                               {getStatusBadge(sub.status)}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="ghost" size="sm" className="text-blue-700">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-blue-700"
+                                onClick={() => {
+                                  setSelectedSubmission(sub);
+                                  setIsDetailsOpen(true);
+                                }}
+                              >
                                 View Details
                               </Button>
                             </TableCell>
@@ -359,6 +373,71 @@ export default function Dashboard() {
           )}
         </Tabs>
       </div>
+
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Submission Details</DialogTitle>
+            <DialogDescription>
+              Review the status and feedback for your manuscript.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedSubmission && (
+            <div className="space-y-6 py-4">
+              <div>
+                <h4 className="text-sm font-medium text-slate-500 mb-1">Title</h4>
+                <p className="text-base font-medium text-slate-900">{selectedSubmission.title}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-slate-500 mb-1">Status</h4>
+                  <div>{getStatusBadge(selectedSubmission.status)}</div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-slate-500 mb-1">Submitted On</h4>
+                  <p className="text-sm text-slate-900">{format(new Date(selectedSubmission.submittedAt), 'MMMM d, yyyy')}</p>
+                </div>
+              </div>
+
+              {selectedSubmission.abstract && (
+                <div>
+                  <h4 className="text-sm font-medium text-slate-500 mb-1">Abstract</h4>
+                  <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-md border border-slate-100">
+                    {selectedSubmission.abstract}
+                  </p>
+                </div>
+              )}
+
+              {selectedSubmission.editorFeedback && (
+                <div>
+                  <h4 className="text-sm font-medium text-slate-500 mb-2 flex items-center">
+                    <MessageSquare className="w-4 h-4 mr-1" />
+                    Editor Feedback
+                  </h4>
+                  <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-md">
+                    <p className="text-sm text-slate-800 whitespace-pre-wrap">
+                      {selectedSubmission.editorFeedback}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="sm:justify-between">
+            <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+              Close
+            </Button>
+            {selectedSubmission?.status === 'revision_requested' && (
+              <Button className="bg-blue-700 hover:bg-blue-800 text-white">
+                Submit Revision
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
