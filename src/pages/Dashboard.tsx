@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy, setDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, setDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare, Users } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const { user, profile, loading, isDemoMode } = useAuth();
@@ -25,6 +26,9 @@ export default function Dashboard() {
   const [submissionToAssign, setSubmissionToAssign] = useState<any | null>(null);
   const [selectedReviewerId, setSelectedReviewerId] = useState<string>('');
   const [isAssigning, setIsAssigning] = useState(false);
+  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [isUpdatingRole, setIsUpdatingRole] = useState<string | null>(null);
 
   const isStaff = profile?.role === 'admin' || profile?.role === 'editor';
   const isReviewer = profile?.role === 'reviewer' || isStaff;
@@ -93,6 +97,17 @@ export default function Dashboard() {
               { uid: 'rev-user-1', displayName: 'Dr. Jane Smith', email: 'jane@example.com', specialties: ['AI', 'Machine Learning'] },
               { uid: 'rev-user-2', displayName: 'Prof. Alan Turing', email: 'alan@example.com', specialties: ['Computer Science', 'Cryptography'] }
             ]);
+            setSubscribers([
+              { uid: 'sub-user-1', displayName: 'Dr. Alice Johnson', email: 'alice@example.com', subscriptionPlan: 'Individual', subscriptionDate: new Date(Date.now() - 86400000 * 30).toISOString(), role: 'subscribed_reader' },
+              { uid: 'sub-user-2', displayName: 'Makerere University Library', email: 'library@mak.ac.ug', subscriptionPlan: 'Institutional', subscriptionDate: new Date(Date.now() - 86400000 * 120).toISOString(), role: 'institutional' },
+              { uid: 'sub-user-3', displayName: 'Dr. Robert Kintu', email: 'robert.k@example.com', subscriptionPlan: 'Individual', subscriptionDate: new Date(Date.now() - 86400000 * 400).toISOString(), role: 'unsubscribed_reader' }
+            ]);
+            setUsersList([
+              { uid: user.uid, displayName: profile.displayName || 'Admin User', email: profile.email || 'admin@example.com', role: profile.role || 'admin' },
+              { uid: 'user-2', displayName: 'Dr. Jane Smith', email: 'jane@example.com', role: 'reviewer' },
+              { uid: 'user-3', displayName: 'John Doe', email: 'john@example.com', role: 'author' },
+              { uid: 'user-4', displayName: 'Alice Johnson', email: 'alice@example.com', role: 'subscribed_reader' },
+            ]);
           }
           setDataLoading(false);
         }, 500);
@@ -145,6 +160,19 @@ export default function Dashboard() {
           );
           const reviewersSnap = await getDocs(reviewersQuery);
           setAvailableReviewers(reviewersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
+
+          // Fetch subscribers
+          const subscribersQuery = query(
+            collection(db, 'users'),
+            where('subscriptionPlan', '!=', null)
+          );
+          const subscribersSnap = await getDocs(subscribersQuery);
+          setSubscribers(subscribersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
+
+          // Fetch all users for role management
+          const usersQuery = query(collection(db, 'users'));
+          const usersSnap = await getDocs(usersQuery);
+          setUsersList(usersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
         }
 
       } catch (error) {
@@ -216,6 +244,29 @@ export default function Dashboard() {
     }
   };
 
+  const handleRoleChange = async (targetUid: string, newRole: string) => {
+    setIsUpdatingRole(targetUid);
+    try {
+      if (isDemoMode) {
+        setTimeout(() => {
+          setUsersList(prev => prev.map(u => u.uid === targetUid ? { ...u, role: newRole } : u));
+          setIsUpdatingRole(null);
+          toast.success('Role updated successfully (Demo Mode)');
+        }, 500);
+        return;
+      }
+
+      await updateDoc(doc(db, 'users', targetUid), { role: newRole });
+      setUsersList(prev => prev.map(u => u.uid === targetUid ? { ...u, role: newRole } : u));
+      toast.success('Role updated successfully');
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Failed to update role');
+    } finally {
+      if (!isDemoMode) setIsUpdatingRole(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'submitted':
@@ -253,6 +304,12 @@ export default function Dashboard() {
             )}
             {isStaff && (
               <TabsTrigger value="admin">Admin Panel</TabsTrigger>
+            )}
+            {isStaff && (
+              <TabsTrigger value="admin-subscriptions">Subscriptions</TabsTrigger>
+            )}
+            {isStaff && (
+              <TabsTrigger value="admin-users">Users</TabsTrigger>
             )}
             {isReader && (
               <TabsTrigger value="reader">Reader Access</TabsTrigger>
@@ -428,6 +485,132 @@ export default function Dashboard() {
               </Card>
             </TabsContent>
           )}
+
+          {isStaff && (
+            <TabsContent value="admin-subscriptions">
+              <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="bg-white border-b border-slate-100 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Subscription Management</CardTitle>
+                    <CardDescription>View and manage user subscriptions.</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm">Export Data</Button>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Plan</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date Subscribed</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {subscribers.length > 0 ? subscribers.map((subscriber) => {
+                        const isExpired = subscriber.role === 'unsubscribed_reader' || 
+                          (subscriber.subscriptionDate && new Date(subscriber.subscriptionDate).getTime() < Date.now() - 86400000 * 365);
+                        
+                        return (
+                          <TableRow key={subscriber.uid}>
+                            <TableCell>
+                              <div className="font-medium text-slate-900">{subscriber.displayName || 'Unknown User'}</div>
+                              <div className="text-xs text-slate-500">{subscriber.email}</div>
+                            </TableCell>
+                            <TableCell>{subscriber.subscriptionPlan || 'Unknown'}</TableCell>
+                            <TableCell>
+                              {isExpired ? (
+                                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Expired</Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-slate-500">
+                              {subscriber.subscriptionDate ? format(new Date(subscriber.subscriptionDate), 'MMM d, yyyy') : 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="sm" className="text-blue-700">Manage</Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                            No subscribers found.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+          {isStaff && (
+            <TabsContent value="admin-users">
+              <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="bg-white border-b border-slate-100 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>User Role Management</CardTitle>
+                    <CardDescription>Assign roles and permissions to users.</CardDescription>
+                  </div>
+                  <Users className="h-5 w-5 text-slate-400" />
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Current Role</TableHead>
+                        <TableHead className="text-right">Change Role</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {usersList.length > 0 ? usersList.map((u) => (
+                        <TableRow key={u.uid}>
+                          <TableCell className="font-medium text-slate-900">{u.displayName || 'Unknown'}</TableCell>
+                          <TableCell className="text-slate-500">{u.email}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize bg-slate-50 text-slate-700">
+                              {u.role?.replace('_', ' ') || 'None'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Select 
+                              disabled={isUpdatingRole === u.uid || u.uid === user.uid} 
+                              value={u.role || ''} 
+                              onValueChange={(val) => handleRoleChange(u.uid, val)}
+                            >
+                              <SelectTrigger className="w-[180px] ml-auto">
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="editor">Editor</SelectItem>
+                                <SelectItem value="reviewer">Reviewer</SelectItem>
+                                <SelectItem value="author">Author</SelectItem>
+                                <SelectItem value="subscribed_reader">Subscribed Reader</SelectItem>
+                                <SelectItem value="unsubscribed_reader">Free Reader</SelectItem>
+                                <SelectItem value="institutional">Institutional</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      )) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                            No users found.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
           {isReader && (
             <TabsContent value="reader">
               <Card className="border-slate-200 shadow-sm">
@@ -445,7 +628,14 @@ export default function Dashboard() {
                       ? "You have institutional access to all published articles."
                       : "You have limited access. Consider subscribing for full access."}
                   </p>
-                  <Link to="/articles" className={buttonVariants({ className: "bg-blue-700 hover:bg-blue-800 text-white" })}>Browse Articles</Link>
+                  <div className="flex justify-center gap-4">
+                    <Link to="/articles" className={buttonVariants({ variant: "outline" })}>Browse Articles</Link>
+                    {!['subscribed_reader', 'institutional', 'admin', 'editor'].includes(profile.role) && (
+                      <Link to="/subscription" className={buttonVariants({ className: "bg-blue-700 hover:bg-blue-800 text-white" })}>
+                        View Subscription Options
+                      </Link>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

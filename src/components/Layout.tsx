@@ -22,6 +22,7 @@ export default function Layout() {
     { name: 'Articles', path: '/articles' },
     { name: 'Archive', path: '/archive' },
     { name: 'Submit Manuscript', path: '/submit' },
+    { name: 'Pricing', path: '/subscription' },
     { name: 'Editorial Board', path: '/editorial-board' },
     { name: 'About', path: '/about' },
   ];

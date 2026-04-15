@@ -92,6 +92,40 @@ export default function AuthorGuidelines() {
             </CardContent>
           </Card>
 
+          <Card className="border-slate-200 shadow-sm">
+            <CardContent className="p-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
+                <FileText className="mr-3 h-6 w-6 text-blue-700" />
+                5. Open Access Policy Details
+              </h2>
+              <div className="text-slate-700 ml-9 space-y-4">
+                <p>UMAJ offers an Open Access publishing option to maximize the visibility and impact of your research:</p>
+                <ul className="space-y-2 list-disc ml-5">
+                  <li><strong>Creative Commons License:</strong> Open access articles are published under a Creative Commons Attribution (CC BY) license, allowing free distribution and adaptation with proper attribution.</li>
+                  <li><strong>Article Processing Charges (APC):</strong> An APC applies to articles accepted for open access publication to cover editorial and hosting costs. Waivers may be available for authors from low-income countries.</li>
+                  <li><strong>Subscription Model:</strong> Authors may also choose the traditional subscription model at no cost, where the article is available to subscribers and institutional members.</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-sm">
+            <CardContent className="p-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
+                <CheckCircle2 className="mr-3 h-6 w-6 text-blue-700" />
+                6. How to Cite UMAJ Articles
+              </h2>
+              <div className="text-slate-700 ml-9 space-y-4">
+                <p>Proper citation ensures authors receive credit for their work. UMAJ recommends the Vancouver or APA citation styles:</p>
+                <ul className="space-y-2 list-disc ml-5">
+                  <li><strong>Vancouver Style:</strong> Author(s). Article title. Uganda Medical Association Journal. Year;Volume(Issue):Page range. DOI.</li>
+                  <li><strong>APA Style:</strong> Author(s). (Year). Article title. <em>Uganda Medical Association Journal</em>, <em>Volume</em>(Issue), Page range. DOI.</li>
+                  <li><strong>Citation Tools:</strong> You can use the "Cite" button on any article page to automatically generate citations in multiple formats or download citation files for reference managers like EndNote, Zotero, or Mendeley.</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center mt-12">
             <h3 className="text-2xl font-bold text-slate-900 mb-3">Ready to Submit?</h3>
             <p className="text-slate-600 mb-6 max-w-2xl mx-auto">

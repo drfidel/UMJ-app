@@ -9,6 +9,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter, FileText, Lock, Unlock } from 'lucide-react';
 import { format } from 'date-fns';
+import Fuse from 'fuse.js';
 
 interface Article {
   id: string;
@@ -103,16 +104,22 @@ export default function Articles() {
     fetchArticles();
   }, []);
 
-  const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          article.authors.some(a => a.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                          article.keywords.some(k => k.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+  // First, apply year filter
+  const yearFilteredArticles = articles.filter(article => {
     const articleYear = new Date(article.publishedAt).getFullYear().toString();
-    const matchesYear = filterYear === 'all' || articleYear === filterYear;
-
-    return matchesSearch && matchesYear;
+    return filterYear === 'all' || articleYear === filterYear;
   });
+
+  // Then, apply fuzzy search if there's a search term
+  let filteredArticles = yearFilteredArticles;
+  if (searchTerm.trim()) {
+    const fuse = new Fuse(yearFilteredArticles, {
+      keys: ['title', 'authors', 'keywords'],
+      threshold: 0.3, // 0.0 is exact match, 1.0 is match anything
+      ignoreLocation: true, // Matches words anywhere in the string
+    });
+    filteredArticles = fuse.search(searchTerm).map(result => result.item);
+  }
 
   const years = ['all', ...Array.from(new Set(articles.map(a => new Date(a.publishedAt).getFullYear().toString())))].sort((a, b) => b.localeCompare(a));
 
@@ -178,8 +185,15 @@ export default function Articles() {
                         </Badge>
                       )}
                     </CardTitle>
-                    <CardDescription className="text-slate-700 font-medium text-base">
-                      {article.authors.join(', ')}
+                    <CardDescription className="text-slate-700 font-medium text-base flex flex-wrap gap-2">
+                      {article.authors.map((author, index) => (
+                        <span key={index}>
+                          <Link to={`/author/${encodeURIComponent(author)}`} className="hover:text-blue-700 hover:underline">
+                            {author}
+                          </Link>
+                          {index < article.authors.length - 1 ? ', ' : ''}
+                        </span>
+                      ))}
                     </CardDescription>
                   </div>
                   <div className="hidden sm:flex flex-col items-end text-sm text-slate-500 whitespace-nowrap">

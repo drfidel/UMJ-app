@@ -6,8 +6,11 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/lib/AuthContext';
-import { ArrowLeft, Download, FileText, Share2, Quote, Lock } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Share2, Quote, Lock, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 
 interface Article {
   id: string;
@@ -28,6 +31,7 @@ export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isCopied, setIsCopied] = useState(false);
   const { user, profile } = useAuth();
 
   const isSubscribed = user && profile && ['subscribed_reader', 'institutional', 'admin', 'editor', 'reviewer', 'author'].includes(profile.role);
@@ -93,6 +97,25 @@ export default function ArticleDetail() {
     );
   }
 
+  const getVancouverCitation = () => {
+    const authorString = article.authors.join(', ');
+    const year = new Date(article.publishedAt).getFullYear();
+    return `${authorString}. ${article.title}. Uganda Medical Association Journal. ${year};${article.volume}(${article.issue}). ${article.doi ? `doi: ${article.doi}` : ''}`;
+  };
+
+  const getAPACitation = () => {
+    const authorString = article.authors.join(', ');
+    const year = new Date(article.publishedAt).getFullYear();
+    return `${authorString}. (${year}). ${article.title}. Uganda Medical Association Journal, ${article.volume}(${article.issue}). ${article.doi ? `https://doi.org/${article.doi}` : ''}`;
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    toast.success('Citation copied to clipboard');
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
   return (
     <div className="bg-slate-50 min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -120,8 +143,15 @@ export default function ArticleDetail() {
 
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Authors</h3>
-              <p className="text-lg text-slate-800 font-medium">
-                {article.authors.join(', ')}
+              <p className="text-lg text-slate-800 font-medium flex flex-wrap gap-2">
+                {article.authors.map((author: string, index: number) => (
+                  <span key={index}>
+                    <Link to={`/author/${encodeURIComponent(author)}`} className="text-blue-700 hover:underline">
+                      {author}
+                    </Link>
+                    {index < article.authors.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
               </p>
             </div>
 
@@ -149,10 +179,54 @@ export default function ArticleDetail() {
                   Subscription Required
                 </Button>
               )}
-              <Button variant="outline" className="bg-white">
-                <Quote className="mr-2 h-4 w-4" />
-                Cite
-              </Button>
+              <Dialog>
+                <DialogTrigger render={
+                  <Button variant="outline" className="bg-white">
+                    <Quote className="mr-2 h-4 w-4" />
+                    Cite
+                  </Button>
+                } />
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Cite this article</DialogTitle>
+                    <DialogDescription>
+                      Choose your preferred citation format and copy it to your clipboard.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Tabs defaultValue="vancouver" className="w-full mt-4">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="vancouver">Vancouver</TabsTrigger>
+                      <TabsTrigger value="apa">APA</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="vancouver" className="mt-4">
+                      <div className="relative bg-slate-50 p-4 rounded-md border border-slate-200">
+                        <p className="text-sm text-slate-800 pr-10">{getVancouverCitation()}</p>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute top-2 right-2 h-8 w-8 text-slate-500 hover:text-blue-700"
+                          onClick={() => handleCopy(getVancouverCitation())}
+                        >
+                          {isCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="apa" className="mt-4">
+                      <div className="relative bg-slate-50 p-4 rounded-md border border-slate-200">
+                        <p className="text-sm text-slate-800 pr-10">{getAPACitation()}</p>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute top-2 right-2 h-8 w-8 text-slate-500 hover:text-blue-700"
+                          onClick={() => handleCopy(getAPACitation())}
+                        >
+                          {isCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="flex items-center text-sm text-slate-500 gap-4">
               <span className="flex items-center">
@@ -190,7 +264,7 @@ export default function ArticleDetail() {
                 <p className="text-slate-600 mb-4">
                   This article is not open access. You need an active subscription to view the full text and download the PDF.
                 </p>
-                <Link to="/about" className={buttonVariants({ className: "bg-blue-700 hover:bg-blue-800 text-white" })}>
+                <Link to="/subscription" className={buttonVariants({ className: "bg-blue-700 hover:bg-blue-800 text-white" })}>
                   View Subscription Options
                 </Link>
               </div>

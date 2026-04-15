@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertCircle, Upload, CheckCircle2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,6 +29,8 @@ export default function Submit() {
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showRolePrompt, setShowRolePrompt] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] = useState<z.infer<typeof formSchema> | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,12 +67,40 @@ export default function Submit() {
       return;
     }
 
+    if (!['author', 'admin', 'editor'].includes(profile.role)) {
+      setPendingSubmitData(values);
+      setShowRolePrompt(true);
+      return;
+    }
+
+    await processSubmission(values);
+  };
+
+  const handleConfirmRoleSwitch = async () => {
+    if (!user || !pendingSubmitData) return;
+    
+    setIsSubmitting(true);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { role: 'author' });
+      
+      await processSubmission(pendingSubmitData);
+      setShowRolePrompt(false);
+      setPendingSubmitData(null);
+    } catch (error) {
+      console.error("Error updating role:", error);
+      toast.error("Failed to update role. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+
+  const processSubmission = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
 
     try {
       // 1. Upload file to Storage
-      const fileRef = ref(storage, `manuscripts/${user.uid}/${Date.now()}_${file.name}`);
-      await uploadBytes(fileRef, file);
+      const fileRef = ref(storage, `manuscripts/${user!.uid}/${Date.now()}_${file!.name}`);
+      await uploadBytes(fileRef, file!);
       const fileUrl = await getDownloadURL(fileRef);
 
       // 2. Process keywords and co-authors
@@ -79,7 +110,7 @@ export default function Submit() {
       // 3. Save to Firestore
       const submissionData = {
         id: crypto.randomUUID(), // Generate a unique ID for the document data
-        authorUid: user.uid,
+        authorUid: user!.uid,
         title: values.title,
         abstract: values.abstract,
         coAuthors: coAuthorsList,
@@ -98,8 +129,6 @@ export default function Submit() {
     } catch (error) {
       console.error("Submission error:", error);
       toast.error('Failed to submit manuscript. Please try again.');
-      // Don't use handleFirestoreError here as it throws and breaks the UI flow, 
-      // just log it or handle it gracefully if it's a known error.
     } finally {
       setIsSubmitting(false);
     }
@@ -246,6 +275,23 @@ export default function Submit() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showRolePrompt} onOpenChange={setShowRolePrompt}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Role to Author</DialogTitle>
+            <DialogDescription>
+              You currently do not have the 'Author' role. To submit a manuscript, your profile needs to be updated to an Author. Do you want to proceed?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setShowRolePrompt(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button className="bg-blue-700 hover:bg-blue-800 text-white" onClick={handleConfirmRoleSwitch} disabled={isSubmitting}>
+              {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
