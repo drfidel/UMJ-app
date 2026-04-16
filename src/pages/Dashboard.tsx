@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare, Users, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
   const { user, profile, loading, isDemoMode } = useAuth();
@@ -52,6 +52,22 @@ export default function Dashboard() {
   const isReviewer = profile?.role === 'reviewer' || isStaff;
   const isAuthor = profile?.role === 'author' || isStaff;
   const isReader = ['subscribed_reader', 'unsubscribed_reader', 'institutional'].includes(profile?.role || '');
+
+  // Mock data for article views and downloads per month
+  const analyticsDataMonthByMonth = [
+    { name: 'May', views: 3400, downloads: 1200 },
+    { name: 'Jun', views: 4000, downloads: 1500 },
+    { name: 'Jul', views: 4200, downloads: 1800 },
+    { name: 'Aug', views: 3800, downloads: 1600 },
+    { name: 'Sep', views: 5100, downloads: 2400 },
+    { name: 'Oct', views: 6300, downloads: 2800 },
+    { name: 'Nov', views: 5800, downloads: 2600 },
+    { name: 'Dec', views: 4900, downloads: 2100 },
+    { name: 'Jan', views: 5500, downloads: 2700 },
+    { name: 'Feb', views: 6800, downloads: 3200 },
+    { name: 'Mar', views: 7200, downloads: 3900 },
+    { name: 'Apr', views: 8100, downloads: 4400 },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -908,6 +924,35 @@ export default function Dashboard() {
                         <RechartsTooltip cursor={{ fill: '#f1f5f9' }} />
                         <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                       </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="mt-6">
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader className="bg-white border-b border-slate-100">
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="mr-2 h-5 w-5 text-blue-700" />
+                      Article Views & Downloads (Last 12 Months)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 h-[400px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={analyticsDataMonthByMonth}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} padding={{ left: 20, right: 20 }} />
+                        <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                        <RechartsTooltip 
+                          contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Legend />
+                        <Line type="monotone" dataKey="views" name="Total Views" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} />
+                        <Line type="monotone" dataKey="downloads" name="PDF Downloads" stroke="#10b981" strokeWidth={3} />
+                      </LineChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>

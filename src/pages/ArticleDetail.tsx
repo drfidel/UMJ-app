@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/AuthContext';
-import { ArrowLeft, Download, FileText, Share2, Quote, Lock, Copy, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download, FileText, Share2, Quote, Lock, Copy, Check, Bookmark, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,12 +34,89 @@ export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<Article | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
+  const [prevArticle, setPrevArticle] = useState<{ id: string, title: string } | null>(null);
+  const [nextArticle, setNextArticle] = useState<{ id: string, title: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingRelated, setLoadingRelated] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const { user, profile } = useAuth();
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const { user, profile, isDemoMode } = useAuth();
+
+  const [isAssignIssueOpen, setIsAssignIssueOpen] = useState(false);
+  const [assignVolume, setAssignVolume] = useState('');
+  const [assignIssue, setAssignIssue] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const isSubscribed = user && profile && ['subscribed_reader', 'institutional', 'admin', 'editor', 'reviewer', 'author'].includes(profile.role);
+  const isBookmarked = profile?.bookmarkedArticles?.includes(id || '') || false;
+  const isEditor = profile?.role === 'editor' || profile?.role === 'admin';
+
+  const handleAssignIssue = async () => {
+    if (!assignVolume || !assignIssue || !article) {
+      toast.error('Please fill in both volume and issue numbers.');
+      return;
+    }
+    
+    if (isDemoMode) {
+      toast.info('Modifying articles is restricted in Demo mode.');
+      return;
+    }
+
+    setIsAssigning(true);
+    try {
+      const docRef = doc(db, 'articles', article.id);
+      await updateDoc(docRef, {
+        volume: parseInt(assignVolume),
+        issue: parseInt(assignIssue)
+      });
+      setArticle({ ...article, volume: parseInt(assignVolume), issue: parseInt(assignIssue) });
+      toast.success('Article assigned to issue successfully.');
+      setIsAssignIssueOpen(false);
+      setAssignVolume('');
+      setAssignIssue('');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `articles/${article.id}`);
+      toast.error('Failed to assign article to issue.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const toggleBookmark = async () => {
+    if (!user || !article) {
+      toast.error('You must be logged in to bookmark articles.');
+      return;
+    }
+
+    if (isDemoMode) {
+      toast.info('Bookmarking functionality is restricted in Demo mode.');
+      return;
+    }
+
+    setIsBookmarking(true);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      if (isBookmarked) {
+        await updateDoc(userRef, {
+          bookmarkedArticles: arrayRemove(article.id)
+        });
+        toast.success('Removed from bookmarks');
+      } else {
+        await updateDoc(userRef, {
+          bookmarkedArticles: arrayUnion(article.id)
+        });
+        toast.success('Added to bookmarks');
+      }
+      
+      // We don't manually update AuthContext profile here, it should be synced via onAuthStateChanged if we listen to the document, or the user can refresh to see effects. Or we let context sync it. Wait, the context does not listen to changes actively (it calls getDoc once on onAuthStateChanged). Let's let Context update natively if we had an onSnapshot in AuthContext, but we don't. We can patch Local profile via state, but we don't hold it. 
+      // Actually `onSnapshot` inside `AuthContext` is better but we can just use the toggle for visual. Wait, profile comes from `useAuth()`. A full refactor of AuthContext might be slightly risky.
+      // If we can't mutate `profile`, we might want local state to track bookmark explicitly until refresh.
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
 
   // Dummy data fallback
   const dummyArticles: Record<string, Article> = {
@@ -132,6 +211,42 @@ export default function ArticleDetail() {
     };
 
     fetchRelatedArticles();
+  }, [article]);
+
+  useEffect(() => {
+    const fetchAdjacentArticles = async () => {
+      if (!article) return;
+      try {
+        const q = query(
+          collection(db, 'articles'),
+          where('volume', '==', article.volume),
+          where('issue', '==', article.issue)
+        );
+        const snap = await getDocs(q);
+        const issueArticles = snap.docs.map(doc => ({ id: doc.id, title: doc.data().title }));
+        
+        // Sort by ID to have a stable order
+        issueArticles.sort((a, b) => a.id.localeCompare(b.id)); 
+        
+        const currentIndex = issueArticles.findIndex(a => a.id === article.id);
+        
+        if (currentIndex > 0) {
+          setPrevArticle(issueArticles[currentIndex - 1]);
+        } else {
+          setPrevArticle(null);
+        }
+        
+        if (currentIndex !== -1 && currentIndex < issueArticles.length - 1) {
+          setNextArticle(issueArticles[currentIndex + 1]);
+        } else {
+          setNextArticle(null);
+        }
+      } catch (error) {
+         console.error("Error fetching adjacent articles:", error);
+      }
+    };
+
+    fetchAdjacentArticles();
   }, [article]);
 
   if (loading) {
@@ -293,6 +408,60 @@ export default function ArticleDetail() {
                   </Tabs>
                 </DialogContent>
               </Dialog>
+              {isEditor && (
+                <Dialog open={isAssignIssueOpen} onOpenChange={setIsAssignIssueOpen}>
+                  <DialogTrigger render={
+                    <Button variant="outline" className="bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Assign Issue
+                    </Button>
+                  } />
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Assign to Issue</DialogTitle>
+                      <DialogDescription>
+                        Update the volume and issue this article is published under.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="volume" className="text-right">
+                          Volume
+                        </Label>
+                        <Input
+                          id="volume"
+                          type="number"
+                          value={assignVolume}
+                          onChange={(e) => setAssignVolume(e.target.value)}
+                          className="col-span-3"
+                          placeholder={article.volume.toString()}
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="issue" className="text-right">
+                          Issue
+                        </Label>
+                        <Input
+                          id="issue"
+                          type="number"
+                          value={assignIssue}
+                          onChange={(e) => setAssignIssue(e.target.value)}
+                          className="col-span-3"
+                          placeholder={article.issue.toString()}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-4">
+                      <Button variant="outline" onClick={() => setIsAssignIssueOpen(false)} disabled={isAssigning}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleAssignIssue} disabled={isAssigning || !assignVolume || !assignIssue}>
+                        {isAssigning ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
             <div className="flex items-center text-sm text-slate-500 gap-4">
               <span className="flex items-center">
@@ -300,6 +469,16 @@ export default function ArticleDetail() {
               </span>
               <Button variant="ghost" size="sm" className="text-slate-500 hover:text-blue-700">
                 <Share2 className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`${isBookmarked ? 'text-blue-700' : 'text-slate-500'} hover:text-blue-700`}
+                onClick={toggleBookmark}
+                disabled={isBookmarking || !user}
+                title={!user ? "Login to bookmark" : isBookmarked ? "Remove bookmark" : "Bookmark article"}
+              >
+                <Bookmark className="h-4 w-4" fill={isBookmarked ? "currentColor" : "none"} />
               </Button>
             </div>
           </div>
@@ -363,6 +542,29 @@ export default function ArticleDetail() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Adjacent Navigation */}
+          <div className="bg-white px-8 py-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+            {prevArticle ? (
+              <Link to={`/articles/${prevArticle.id}`} className="group flex items-center max-w-full sm:max-w-[45%]">
+                <ArrowLeft className="mr-3 h-5 w-5 text-slate-400 group-hover:text-blue-700 transition-colors flex-shrink-0" />
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Previous in Issue</p>
+                  <p className="text-sm font-medium text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-2">{prevArticle.title}</p>
+                </div>
+              </Link>
+            ) : <div className="hidden sm:block sm:max-w-[45%]"></div>}
+            
+            {nextArticle ? (
+              <Link to={`/articles/${nextArticle.id}`} className="group flex items-center max-w-full sm:max-w-[45%] justify-end text-right ml-auto sm:ml-0">
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Next in Issue</p>
+                  <p className="text-sm font-medium text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-2">{nextArticle.title}</p>
+                </div>
+                <ArrowRight className="ml-3 h-5 w-5 text-slate-400 group-hover:text-blue-700 transition-colors flex-shrink-0" />
+              </Link>
+            ) : <div className="hidden sm:block sm:max-w-[45%]"></div>}
           </div>
         </div>
 

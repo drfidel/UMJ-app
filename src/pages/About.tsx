@@ -5,11 +5,11 @@ export default function About() {
   return (
     <div className="bg-white min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold text-slate-900 mb-8">About UMAJ</h1>
+        <h1 className="text-4xl font-bold text-slate-900 mb-8">About UMJ</h1>
         
         <div className="prose prose-slate prose-lg max-w-none">
           <p className="lead text-xl text-slate-600 mb-8">
-            The Uganda Medical Association Journal (UMAJ) is the official publication of the Uganda Medical Association. It is a peer-reviewed, open-access medical journal dedicated to publishing high-quality research and clinical studies.
+            The Uganda Medical Journal (UMJ) is the official publication of the Uganda Medical Association. It is a peer-reviewed, open-access medical journal dedicated to publishing high-quality research and clinical studies.
           </p>
 
           <Card className="bg-blue-50 border-none shadow-none mb-10">
@@ -35,7 +35,7 @@ export default function About() {
 
           <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">Indexing and Abstracting</h2>
           <p>
-            The Uganda Medical Association Journal (UMAJ) is committed to ensuring the widest possible dissemination and discoverability of its published research. UMAJ is currently indexed, abstracted, or listed in the following prominent databases and services:
+            The Uganda Medical Journal (UMJ) is committed to ensuring the widest possible dissemination and discoverability of its published research. UMJ is currently indexed, abstracted, or listed in the following prominent databases and services:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <Card className="border-slate-200 shadow-sm">
@@ -50,7 +50,7 @@ export default function About() {
               <CardContent className="p-6">
                 <h3 className="text-lg font-bold text-slate-900 mb-2">African Journals Online (AJOL)</h3>
                 <p className="text-slate-600 text-sm">
-                  As a leading African medical journal, UMAJ is proudly hosted and indexed on AJOL, the world's largest and pre-eminent collection of peer-reviewed, African-published scholarly journals.
+                  As a leading African medical journal, UMJ is proudly hosted and indexed on AJOL, the world's largest and pre-eminent collection of peer-reviewed, African-published scholarly journals.
                 </p>
               </CardContent>
             </Card>

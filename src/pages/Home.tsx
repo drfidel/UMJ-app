@@ -51,11 +51,11 @@ export default function Home() {
                 The official publication of the Uganda Medical Association, dedicated to disseminating high-quality, peer-reviewed research to improve healthcare outcomes across the region.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/articles" className={buttonVariants({ size: "lg", className: "bg-white text-blue-900 hover:bg-slate-100 font-semibold" })}>
+                <Link to="/articles" className={buttonVariants({ size: "lg", className: "bg-dark text-blue-900 hover:bg-slate-100 font-semibold" })}>
                     Read Latest Articles
                     <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
-                <Link to="/submit" className={buttonVariants({ size: "lg", variant: "outline", className: "text-white border-white hover:bg-white/10 font-semibold" })}>
+                <Link to="/submit" className={buttonVariants({ size: "lg", variant: "outline", className: "text-black border-white hover:bg-white/10 font-semibold" })}>
                     Submit Manuscript
                 </Link>
               </div>

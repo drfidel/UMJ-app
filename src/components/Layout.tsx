@@ -58,7 +58,7 @@ export default function Layout() {
               <Link to="/" className="flex items-center space-x-2">
                 <BookOpen className="h-8 w-8 text-blue-700" />
                 <span className="font-bold text-xl text-slate-900 hidden sm:block">
-                  Uganda Medical Association Journal
+                  Uganda Medical Journal
                 </span>
                 <span className="font-bold text-xl text-slate-900 sm:hidden">
                   UMAJ
@@ -225,10 +225,10 @@ export default function Layout() {
             <div className="col-span-1 md:col-span-2 lg:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
                 <BookOpen className="h-6 w-6 text-blue-400" />
-                <span className="font-bold text-lg">UMAJ</span>
+                <span className="font-bold text-lg">UMJ</span>
               </div>
               <p className="text-slate-400 text-sm max-w-md">
-                The Uganda Medical Association Journal is a peer-reviewed, open-access medical journal dedicated to publishing high-quality research and clinical studies from Uganda and the international medical community.
+                The Uganda Medical Journal is a peer-reviewed, open-access medical journal dedicated to publishing high-quality research and clinical studies from Uganda and the international medical community.
               </p>
             </div>
             <div>
@@ -238,7 +238,7 @@ export default function Layout() {
                 <li><Link to="/authors" className="text-slate-400 hover:text-white text-sm">Authors</Link></li>
                 <li><Link to="/submit" className="text-slate-400 hover:text-white text-sm">Submit Manuscript</Link></li>
                 <li><Link to="/editorial-board" className="text-slate-400 hover:text-white text-sm">Editorial Board</Link></li>
-                <li><Link to="/about" className="text-slate-400 hover:text-white text-sm">About UMAJ</Link></li>
+                <li><Link to="/about" className="text-slate-400 hover:text-white text-sm">About UMJ</Link></li>
               </ul>
             </div>
             <div>
@@ -246,7 +246,7 @@ export default function Layout() {
               <ul className="space-y-2 text-sm text-slate-400">
                 <li>Uganda Medical Association</li>
                 <li>P.O. Box 29874, Kampala, Uganda</li>
-                <li>Email: editor@umaj.org.ug</li>
+                <li>Email: editor@umj.org.ug</li>
               </ul>
             </div>
             <div className="col-span-1 md:col-span-4 lg:col-span-1">

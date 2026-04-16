@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User as FirebaseUser, onAuthStateChanged, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from './firebase';
 import { toast } from 'sonner';
 
@@ -15,6 +15,7 @@ export interface UserProfile {
   affiliation?: string;
   specialties?: string[];
   createdAt: string;
+  bookmarkedArticles?: string[];
 }
 
 interface AuthContextType {
@@ -62,38 +63,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let profileUnsubscribe: () => void;
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
           
-          if (userDoc.exists()) {
-            setProfile(userDoc.data() as UserProfile);
-          } else {
-            // Create default profile for new users
-            const newProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || 'Anonymous User',
-              photoURL: firebaseUser.photoURL || undefined,
-              role: 'author', // Default role
-              createdAt: new Date().toISOString(),
-            };
-            await setDoc(userDocRef, newProfile);
-            setProfile(newProfile);
-          }
+          profileUnsubscribe = onSnapshot(userDocRef, async (userDoc) => {
+            if (userDoc.exists()) {
+              setProfile(userDoc.data() as UserProfile);
+            } else {
+              // Create default profile for new users
+              const newProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || 'Anonymous User',
+                photoURL: firebaseUser.photoURL || undefined,
+                role: 'author', // Default role
+                createdAt: new Date().toISOString(),
+              };
+              await setDoc(userDocRef, newProfile);
+              setProfile(newProfile);
+            }
+          }, (error) => {
+            handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+          });
+          
         } catch (error) {
           handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
         }
       } else {
         setProfile(null);
+        if (profileUnsubscribe) profileUnsubscribe();
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (profileUnsubscribe) profileUnsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = async () => {

@@ -264,6 +264,55 @@ export default function Submit() {
           </p>
         </div>
 
+        <Card className="border-slate-200 shadow-sm mb-8 bg-blue-50">
+          <CardHeader className="border-b border-blue-100 pb-4">
+            <CardTitle className="text-xl text-slate-800 flex items-center">
+              <FileText className="mr-2 h-5 w-5 text-blue-700" />
+              Submission Guidelines
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-700">
+            <div>
+              <h3 className="font-bold text-slate-900 mb-2 flex items-center">
+                <span className="w-6 h-6 rounded-full border border-blue-200 bg-white text-blue-700 flex items-center justify-center mr-2 text-xs">1</span>
+                Formatting & Structure
+              </h3>
+              <ul className="list-disc pl-5 space-y-1 text-slate-600 ml-2">
+                <li>Submit in DOCX or PDF format (Max 10MB).</li>
+                <li>Use standard fonts (e.g., Times New Roman, 12pt), double-spaced.</li>
+                <li>Structured abstract required (100-500 words) with Background, Methods, Results, and Conclusion.</li>
+                <li>Standard sections: Introduction, Methods, Results, Discussion, References.</li>
+                <li>Include 3-5 keywords to aid indexing.</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-slate-900 mb-2 flex items-center">
+                <span className="w-6 h-6 rounded-full border border-blue-200 bg-white text-blue-700 flex items-center justify-center mr-2 text-xs">2</span>
+                Peer Review Process
+              </h3>
+              <ul className="list-disc pl-5 space-y-1 text-slate-600 ml-2">
+                <li>All submissions undergo strict double-blind peer review.</li>
+                <li>Initial editorial screening takes 3-5 working days.</li>
+                <li>Peer review feedback is typically provided within 4-6 weeks.</li>
+                <li>Revisions may be requested based on the reviewers' evaluations.</li>
+              </ul>
+            </div>
+
+            <div className="md:col-span-2 border-t border-blue-100 pt-4">
+              <h3 className="font-bold text-slate-900 mb-2 flex items-center">
+                <span className="w-6 h-6 rounded-full border border-blue-200 bg-white text-blue-700 flex items-center justify-center mr-2 text-xs">3</span>
+                Ethical Considerations
+              </h3>
+              <ul className="list-disc pl-5 space-y-1 text-slate-600 ml-2">
+                <li>Research involving human or animal subjects must include Institutional Review Board (IRB) approval statements and informed consent declarations.</li>
+                <li>Authors must declare any potential financial or non-financial conflicts of interest.</li>
+                <li>The Uganda Medical Journal enforces a strict policy against plagiarism, duplicate submission, and data falsification.</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="bg-white border-b border-slate-100 pb-6">
             <CardTitle>Manuscript Details</CardTitle>

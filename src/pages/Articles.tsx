@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, updateDoc, doc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, FileText, Lock, Unlock } from 'lucide-react';
+import { Search, Filter, FileText, Lock, Unlock, Bookmark } from 'lucide-react';
 import { format } from 'date-fns';
 import Fuse from 'fuse.js';
+import { useAuth } from '@/lib/AuthContext';
+import { toast } from 'sonner';
 
 interface Article {
   id: string;
@@ -28,6 +30,43 @@ export default function Articles() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterYear, setFilterYear] = useState('all');
+  const [bookmarkingId, setBookmarkingId] = useState<string | null>(null);
+
+  const { user, profile, isDemoMode } = useAuth();
+
+  const toggleBookmark = async (articleId: string) => {
+    if (!user) {
+      toast.error('You must be logged in to bookmark articles.');
+      return;
+    }
+
+    if (isDemoMode) {
+      toast.info('Bookmarking functionality is restricted in Demo mode.');
+      return;
+    }
+
+    setBookmarkingId(articleId);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const isBookmarked = profile?.bookmarkedArticles?.includes(articleId);
+
+      if (isBookmarked) {
+        await updateDoc(userRef, {
+          bookmarkedArticles: arrayRemove(articleId)
+        });
+        toast.success('Removed from bookmarks');
+      } else {
+        await updateDoc(userRef, {
+          bookmarkedArticles: arrayUnion(articleId)
+        });
+        toast.success('Added to bookmarks');
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+    } finally {
+      setBookmarkingId(null);
+    }
+  };
 
   // Dummy data fallback
   const dummyArticles: Article[] = [
@@ -114,7 +153,11 @@ export default function Articles() {
   let filteredArticles = yearFilteredArticles;
   if (searchTerm.trim()) {
     const fuse = new Fuse(yearFilteredArticles, {
-      keys: ['title', 'authors', 'keywords'],
+      keys: [
+        { name: 'title', weight: 3 },
+        { name: 'authors', weight: 1 },
+        { name: 'keywords', weight: 1 }
+      ],
       threshold: 0.3, // 0.0 is exact match, 1.0 is match anything
       ignoreLocation: true, // Matches words anywhere in the string
     });
@@ -175,15 +218,30 @@ export default function Articles() {
                       <Link to={`/articles/${article.id}`} className="flex-grow">
                         {article.title}
                       </Link>
-                      {article.isOpenAccess ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 whitespace-nowrap flex-shrink-0">
-                          <Unlock className="w-3 h-3 mr-1" /> Open Access
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 whitespace-nowrap flex-shrink-0">
-                          <Lock className="w-3 h-3 mr-1" /> Subscription
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`${profile?.bookmarkedArticles?.includes(article.id) ? 'text-blue-700' : 'text-slate-400'} hover:text-blue-700 h-8 w-8`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleBookmark(article.id);
+                          }}
+                          disabled={bookmarkingId === article.id || !user}
+                          title={!user ? "Login to bookmark" : profile?.bookmarkedArticles?.includes(article.id) ? "Remove bookmark" : "Bookmark article"}
+                        >
+                          <Bookmark className="h-4 w-4" fill={profile?.bookmarkedArticles?.includes(article.id) ? "currentColor" : "none"} />
+                        </Button>
+                        {article.isOpenAccess ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 whitespace-nowrap hidden sm:flex">
+                            <Unlock className="w-3 h-3 mr-1" /> Open Access
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 whitespace-nowrap hidden sm:flex">
+                            <Lock className="w-3 h-3 mr-1" /> Subscription
+                          </Badge>
+                        )}
+                      </div>
                     </CardTitle>
                     <CardDescription className="text-slate-700 font-medium text-base flex flex-wrap gap-2">
                       {article.authors.map((author, index) => (
