@@ -141,10 +141,10 @@ service cloud.firestore {
       // Articles are public
       allow read: if true;
       
-      // Only admins can manage articles
-      allow create: if isAdmin() && isValidArticle(request.resource.data);
-      allow update: if isAdmin() && isValidArticle(request.resource.data) && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin();
+      // Admins and editors can manage articles
+      allow create: if (isAdmin() || isEditor()) && isValidArticle(request.resource.data);
+      allow update: if (isAdmin() || isEditor()) && isValidArticle(request.resource.data) && request.resource.data.id == resource.data.id;
+      allow delete: if (isAdmin() || isEditor());
     }
 
     match /submissions/{submissionId} {

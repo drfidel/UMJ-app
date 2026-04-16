@@ -211,11 +211,22 @@ export default function ArticleDetail() {
             </div>
 
             {article.doi && (
-              <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100 inline-block">
-                <span className="font-semibold mr-2">DOI:</span>
-                <a href={`https://doi.org/${article.doi}`} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                  {article.doi}
-                </a>
+              <div className="flex flex-wrap gap-4 items-center mt-4">
+                <div className="flex items-center text-sm text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-100">
+                  <span className="font-semibold mr-2">DOI:</span>
+                  <a href={`https://doi.org/${article.doi}`} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                    {article.doi}
+                  </a>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-slate-600"
+                  onClick={() => handleCopy(getAPACitation())}
+                >
+                  {isCopied ? <Check className="mr-2 h-4 w-4 text-green-600" /> : <Copy className="mr-2 h-4 w-4" />}
+                  {isCopied ? 'Copied!' : 'Copy Citation'}
+                </Button>
               </div>
             )}
           </div>

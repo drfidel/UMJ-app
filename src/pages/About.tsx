@@ -33,16 +33,44 @@ export default function About() {
             UMAJ employs a rigorous double-blind peer review process. All submitted manuscripts are initially evaluated by the Editorial Board for suitability. Manuscripts deemed appropriate are then sent to at least two independent expert reviewers to assess the scientific quality of the paper. The Editor-in-Chief makes the final decision regarding acceptance or rejection based on the reviewers' reports.
           </p>
 
-          <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">Indexing</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mt-10 mb-4">Indexing and Abstracting</h2>
           <p>
-            UMAJ is currently indexed or abstracted in:
+            The Uganda Medical Association Journal (UMAJ) is committed to ensuring the widest possible dissemination and discoverability of its published research. UMAJ is currently indexed, abstracted, or listed in the following prominent databases and services:
           </p>
-          <ul>
-            <li>African Journals OnLine (AJOL)</li>
-            <li>Directory of Open Access Journals (DOAJ)</li>
-            <li>Google Scholar</li>
-            <li>PubMed Central (Pending Review)</li>
-          </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <Card className="border-slate-200 shadow-sm">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold text-slate-900 mb-2">PubMed / MEDLINE</h3>
+                <p className="text-slate-600 text-sm">
+                  UMAJ articles are discoverable through PubMed, the premier database of biomedical literature maintained by the National Center for Biotechnology Information (NCBI) at the U.S. National Library of Medicine.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-slate-200 shadow-sm">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold text-slate-900 mb-2">African Journals Online (AJOL)</h3>
+                <p className="text-slate-600 text-sm">
+                  As a leading African medical journal, UMAJ is proudly hosted and indexed on AJOL, the world's largest and pre-eminent collection of peer-reviewed, African-published scholarly journals.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-slate-200 shadow-sm">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold text-slate-900 mb-2">Google Scholar</h3>
+                <p className="text-slate-600 text-sm">
+                  All published articles are comprehensively indexed by Google Scholar, ensuring high visibility and easy access for researchers globally searching for academic literature.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-slate-200 shadow-sm">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold text-slate-900 mb-2">DOAJ</h3>
+                <p className="text-slate-600 text-sm">
+                  UMAJ is listed in the Directory of Open Access Journals (DOAJ), a community-curated online directory that indexes and provides access to high-quality, open access, peer-reviewed journals.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
           <Separator className="my-10" />
 

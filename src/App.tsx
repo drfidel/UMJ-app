@@ -4,6 +4,8 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Articles from './pages/Articles';
 import ArticleDetail from './pages/ArticleDetail';
+import IssueDetail from './pages/IssueDetail';
+import AuthorsList from './pages/AuthorsList';
 import Submit from './pages/Submit';
 import Dashboard from './pages/Dashboard';
 import EditorialBoard from './pages/EditorialBoard';
@@ -25,6 +27,8 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="articles" element={<Articles />} />
             <Route path="articles/:id" element={<ArticleDetail />} />
+            <Route path="issue/:volumeId/:issueId" element={<IssueDetail />} />
+            <Route path="authors" element={<AuthorsList />} />
             <Route path="author/:name" element={<AuthorProfile />} />
             <Route path="profile" element={<Profile />} />
             <Route path="archive" element={<Archive />} />

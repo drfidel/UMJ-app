@@ -1,6 +1,7 @@
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,13 +14,23 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function Layout() {
   const { user, profile, signInWithGoogle, loginAsDemoUser, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail) return;
+    toast.success('Successfully subscribed to the newsletter!');
+    setNewsletterEmail('');
+  };
 
   const navLinks = [
     { name: 'Articles', path: '/articles' },
+    { name: 'Authors', path: '/authors' },
     { name: 'Archive', path: '/archive' },
     { name: 'Submit Manuscript', path: '/submit' },
     { name: 'Pricing', path: '/subscription' },
@@ -210,8 +221,8 @@ export default function Layout() {
       {/* Footer */}
       <footer className="bg-slate-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8">
+            <div className="col-span-1 md:col-span-2 lg:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
                 <BookOpen className="h-6 w-6 text-blue-400" />
                 <span className="font-bold text-lg">UMAJ</span>
@@ -224,6 +235,7 @@ export default function Layout() {
               <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Quick Links</h3>
               <ul className="space-y-2">
                 <li><Link to="/articles" className="text-slate-400 hover:text-white text-sm">Current Issue</Link></li>
+                <li><Link to="/authors" className="text-slate-400 hover:text-white text-sm">Authors</Link></li>
                 <li><Link to="/submit" className="text-slate-400 hover:text-white text-sm">Submit Manuscript</Link></li>
                 <li><Link to="/editorial-board" className="text-slate-400 hover:text-white text-sm">Editorial Board</Link></li>
                 <li><Link to="/about" className="text-slate-400 hover:text-white text-sm">About UMAJ</Link></li>
@@ -236,6 +248,23 @@ export default function Layout() {
                 <li>P.O. Box 29874, Kampala, Uganda</li>
                 <li>Email: editor@umaj.org.ug</li>
               </ul>
+            </div>
+            <div className="col-span-1 md:col-span-4 lg:col-span-1">
+              <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Newsletter</h3>
+              <p className="text-slate-400 text-sm mb-4">Subscribe to receive updates on new issues and articles.</p>
+              <form onSubmit={handleSubscribe} className="flex flex-col space-y-2">
+                <Input 
+                  type="email" 
+                  placeholder="Enter your email" 
+                  className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus-visible:ring-blue-500"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  required
+                />
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white w-full">
+                  Subscribe
+                </Button>
+              </form>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-slate-800 text-sm text-slate-400 flex flex-col md:flex-row justify-between items-center">

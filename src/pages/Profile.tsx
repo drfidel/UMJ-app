@@ -185,12 +185,27 @@ export default function Profile() {
                 <Building className="mr-2 h-4 w-4 text-slate-400" /> Affiliation
               </Label>
               {isEditing ? (
-                <Input 
-                  id="affiliation" 
-                  value={affiliation} 
-                  onChange={(e) => setAffiliation(e.target.value)} 
-                  placeholder="e.g., Makerere University"
-                />
+                <>
+                  <Input 
+                    id="affiliation" 
+                    value={affiliation} 
+                    onChange={(e) => setAffiliation(e.target.value)} 
+                    placeholder="e.g., Makerere University"
+                    list="ugandan-institutions"
+                  />
+                  <datalist id="ugandan-institutions">
+                    <option value="Makerere University" />
+                    <option value="Mbarara University of Science and Technology (MUST)" />
+                    <option value="Gulu University" />
+                    <option value="Busitema University" />
+                    <option value="Kampala International University (KIU)" />
+                    <option value="Uganda Christian University (UCU)" />
+                    <option value="Mulago National Referral Hospital" />
+                    <option value="Uganda Virus Research Institute (UVRI)" />
+                    <option value="Infectious Diseases Institute (IDI)" />
+                    <option value="Joint Clinical Research Centre (JCRC)" />
+                  </datalist>
+                </>
               ) : (
                 <div className="h-10 flex items-center px-3 border border-transparent text-slate-700">
                   {profile.affiliation || <span className="text-slate-400 italic">Not specified</span>}

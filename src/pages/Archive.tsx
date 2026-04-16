@@ -82,7 +82,7 @@ export default function Archive() {
                           {vol.issues.map((issue) => (
                             <Link 
                               key={`${vol.volume}-${issue.issue}`} 
-                              to={`/articles?volume=${vol.volume}&issue=${issue.issue}`}
+                              to={`/issue/${vol.volume}/${issue.issue}`}
                               className="block group"
                             >
                               <div className="border border-slate-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all bg-white h-full flex flex-col">

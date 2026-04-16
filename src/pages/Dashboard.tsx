@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy, setDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, setDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare, Users, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -30,6 +33,20 @@ export default function Dashboard() {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [isUpdatingRole, setIsUpdatingRole] = useState<string | null>(null);
+
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [activeReview, setActiveReview] = useState<any | null>(null);
+  const [reviewComments, setReviewComments] = useState('');
+  const [reviewRecommendation, setReviewRecommendation] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  const [publishedArticles, setPublishedArticles] = useState<any[]>([]);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [submissionToPublish, setSubmissionToPublish] = useState<any | null>(null);
+  const [publishVolume, setPublishVolume] = useState('');
+  const [publishIssue, setPublishIssue] = useState('');
+  const [publishDoi, setPublishDoi] = useState('');
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const isStaff = profile?.role === 'admin' || profile?.role === 'editor';
   const isReviewer = profile?.role === 'reviewer' || isStaff;
@@ -142,8 +159,7 @@ export default function Dashboard() {
         // If Admin/Editor, fetch all pending submissions and available reviewers
         if (isStaff) {
            const adminQuery = query(
-            collection(db, 'submissions'),
-            where('status', 'in', ['submitted', 'under_review'])
+            collection(db, 'submissions')
           );
           const adminSnap = await getDocs(adminQuery);
           // Only add if not already in submissions list
@@ -153,6 +169,11 @@ export default function Dashboard() {
             .filter(s => !existingIds.has(s.id));
           
           setSubmissions(prev => [...prev, ...adminSubs].sort((a: any, b: any) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()));
+
+          // Fetch published articles
+          const articlesQuery = query(collection(db, 'articles'));
+          const articlesSnap = await getDocs(articlesQuery);
+          setPublishedArticles(articlesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
           // Fetch available reviewers
           const reviewersQuery = query(
@@ -267,6 +288,141 @@ export default function Dashboard() {
       toast.error('Failed to update role');
     } finally {
       if (!isDemoMode) setIsUpdatingRole(null);
+    }
+  };
+
+  const handleOpenReviewModal = (review: any) => {
+    setActiveReview(review);
+    setReviewComments(review.comments || '');
+    setReviewRecommendation(review.recommendation || '');
+    setIsReviewModalOpen(true);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewRecommendation) {
+      toast.error('Please select a recommendation');
+      return;
+    }
+    if (!reviewComments.trim()) {
+      toast.error('Please provide comments');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      if (isDemoMode) {
+        setTimeout(() => {
+          setReviews(prev => prev.map(r => r.id === activeReview.id ? {
+            ...r,
+            status: 'completed',
+            recommendation: reviewRecommendation,
+            comments: reviewComments,
+            completedAt: new Date().toISOString()
+          } : r));
+          setIsReviewModalOpen(false);
+          toast.success('Review submitted successfully (Demo Mode)');
+          setIsSubmittingReview(false);
+        }, 500);
+        return;
+      }
+
+      await updateDoc(doc(db, 'reviews', activeReview.id), {
+        status: 'completed',
+        recommendation: reviewRecommendation,
+        comments: reviewComments,
+        completedAt: new Date().toISOString()
+      });
+
+      setReviews(prev => prev.map(r => r.id === activeReview.id ? {
+        ...r,
+        status: 'completed',
+        recommendation: reviewRecommendation,
+        comments: reviewComments,
+        completedAt: new Date().toISOString()
+      } : r));
+      
+      setIsReviewModalOpen(false);
+      toast.success('Review submitted successfully');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      toast.error('Failed to submit review');
+    } finally {
+      if (!isDemoMode) setIsSubmittingReview(false);
+    }
+  };
+
+  const handleOpenPublishModal = (submission: any) => {
+    setSubmissionToPublish(submission);
+    setPublishVolume('1');
+    setPublishIssue('1');
+    setPublishDoi(`10.1234/umaj.${new Date().getFullYear()}.${submission.id.substring(0, 6)}`);
+    setIsPublishModalOpen(true);
+  };
+
+  const handlePublishArticle = async () => {
+    if (!submissionToPublish || !publishVolume || !publishIssue) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      if (isDemoMode) {
+        setTimeout(() => {
+          setPublishedArticles(prev => [...prev, { id: submissionToPublish.id }]);
+          setIsPublishModalOpen(false);
+          toast.success('Article published successfully (Demo Mode)');
+          setIsPublishing(false);
+        }, 500);
+        return;
+      }
+
+      const newArticle = {
+        id: submissionToPublish.id,
+        title: submissionToPublish.title,
+        abstract: submissionToPublish.abstract,
+        authors: [submissionToPublish.authorUid], // Simplified for now
+        keywords: submissionToPublish.keywords || [],
+        volume: parseInt(publishVolume),
+        issue: parseInt(publishIssue),
+        doi: publishDoi,
+        pdfUrl: submissionToPublish.fileUrl || '#',
+        publishedAt: new Date().toISOString(),
+        views: 0,
+        downloads: 0
+      };
+
+      await setDoc(doc(db, 'articles', submissionToPublish.id), newArticle);
+      setPublishedArticles(prev => [...prev, newArticle]);
+      
+      setIsPublishModalOpen(false);
+      toast.success('Article published successfully');
+    } catch (error) {
+      console.error('Error publishing article:', error);
+      toast.error('Failed to publish article');
+    } finally {
+      if (!isDemoMode) setIsPublishing(false);
+    }
+  };
+
+  const handleRetractArticle = async (articleId: string) => {
+    if (!window.confirm('Are you sure you want to retract this article? It will be removed from the public articles list.')) {
+      return;
+    }
+
+    try {
+      if (isDemoMode) {
+        setPublishedArticles(prev => prev.filter(a => a.id !== articleId));
+        toast.success('Article retracted successfully (Demo Mode)');
+        return;
+      }
+
+      await deleteDoc(doc(db, 'articles', articleId));
+      setPublishedArticles(prev => prev.filter(a => a.id !== articleId));
+      toast.success('Article retracted successfully');
+    } catch (error) {
+      console.error('Error retracting article:', error);
+      toast.error('Failed to retract article');
     }
   };
 
@@ -420,7 +576,11 @@ export default function Dashboard() {
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleOpenReviewModal(review)}
+                              >
                                 {review.status === 'pending' ? 'Start Review' : 'View Review'}
                               </Button>
                             </TableCell>
@@ -470,18 +630,50 @@ export default function Dashboard() {
                             {getStatusBadge(sub.status)}
                           </TableCell>
                           <TableCell className="text-right">
+                            {sub.status === 'accepted' && !publishedArticles.some(a => a.id === sub.id) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mr-2 border-green-200 text-green-700 bg-green-50 hover:bg-green-100"
+                                onClick={() => handleOpenPublishModal(sub)}
+                              >
+                                Publish
+                              </Button>
+                            )}
+                            {publishedArticles.some(a => a.id === sub.id) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mr-2 border-red-200 text-red-700 bg-red-50 hover:bg-red-100"
+                                onClick={() => handleRetractArticle(sub.id)}
+                              >
+                                Retract
+                              </Button>
+                            )}
+                            {['submitted', 'under_review'].includes(sub.status) && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mr-2"
+                                onClick={() => {
+                                  setSubmissionToAssign(sub);
+                                  setIsAssignReviewerOpen(true);
+                                }}
+                              >
+                                Assign Reviewer
+                              </Button>
+                            )}
                             <Button 
-                              variant="outline" 
+                              variant="ghost" 
                               size="sm" 
-                              className="mr-2"
+                              className="text-blue-700"
                               onClick={() => {
-                                setSubmissionToAssign(sub);
-                                setIsAssignReviewerOpen(true);
+                                setSelectedSubmission(sub);
+                                setIsDetailsOpen(true);
                               }}
                             >
-                              Assign Reviewer
+                              Manage
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-blue-700">Manage</Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -875,6 +1067,134 @@ export default function Dashboard() {
               disabled={!selectedReviewerId || isAssigning}
             >
               {isAssigning ? 'Assigning...' : 'Assign Reviewer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Submission Modal */}
+      <Dialog open={isReviewModalOpen} onOpenChange={setIsReviewModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              {activeReview?.status === 'pending' ? 'Submit Review' : 'View Review'}
+            </DialogTitle>
+            <DialogDescription>
+              Provide your feedback and recommendation for Submission #{activeReview?.submissionId.substring(0, 8)}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="recommendation">Recommendation</Label>
+              <Select 
+                value={reviewRecommendation} 
+                onValueChange={setReviewRecommendation}
+                disabled={activeReview?.status === 'completed'}
+              >
+                <SelectTrigger id="recommendation">
+                  <SelectValue placeholder="Select recommendation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="accept">Accept Submission</SelectItem>
+                  <SelectItem value="minor_revision">Minor Revision</SelectItem>
+                  <SelectItem value="major_revision">Major Revision</SelectItem>
+                  <SelectItem value="reject">Reject Submission</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="comments">Reviewer Comments</Label>
+              <Textarea 
+                id="comments" 
+                placeholder="Provide detailed feedback for the authors and editors..."
+                className="min-h-[150px]"
+                value={reviewComments}
+                onChange={(e) => setReviewComments(e.target.value)}
+                disabled={activeReview?.status === 'completed'}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReviewModalOpen(false)}>
+              {activeReview?.status === 'completed' ? 'Close' : 'Cancel'}
+            </Button>
+            {activeReview?.status === 'pending' && (
+              <Button 
+                className="bg-blue-700 hover:bg-blue-800 text-white" 
+                onClick={handleSubmitReview}
+                disabled={isSubmittingReview}
+              >
+                {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish Article Modal */}
+      <Dialog open={isPublishModalOpen} onOpenChange={setIsPublishModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Publish Article</DialogTitle>
+            <DialogDescription>
+              Assign this manuscript to a volume and issue to publish it.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {submissionToPublish && (
+            <div className="space-y-4 py-4">
+              <div>
+                <h4 className="text-sm font-medium text-slate-500 mb-1">Manuscript</h4>
+                <p className="text-sm font-medium text-slate-900 line-clamp-2">{submissionToPublish.title}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="volume">Volume</Label>
+                  <Input 
+                    id="volume" 
+                    type="number" 
+                    value={publishVolume} 
+                    onChange={(e) => setPublishVolume(e.target.value)} 
+                    min="1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="issue">Issue</Label>
+                  <Input 
+                    id="issue" 
+                    type="number" 
+                    value={publishIssue} 
+                    onChange={(e) => setPublishIssue(e.target.value)} 
+                    min="1"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="doi">DOI (Optional)</Label>
+                <Input 
+                  id="doi" 
+                  value={publishDoi} 
+                  onChange={(e) => setPublishDoi(e.target.value)} 
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPublishModalOpen(false)} disabled={isPublishing}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white" 
+              onClick={handlePublishArticle}
+              disabled={isPublishing}
+            >
+              {isPublishing ? 'Publishing...' : 'Publish Article'}
             </Button>
           </DialogFooter>
         </DialogContent>
