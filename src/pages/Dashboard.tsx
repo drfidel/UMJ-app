@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare, Users } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare, Users, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
   const { user, profile, loading, isDemoMode } = useAuth();
@@ -209,6 +210,7 @@ export default function Dashboard() {
           setSelectedReviewerId('');
           // Update submission status locally
           setSubmissions(prev => prev.map(s => s.id === submissionToAssign.id ? { ...s, status: 'under_review' } : s));
+          toast.success('Reviewer assigned successfully (Demo)');
         }, 500);
         return;
       }
@@ -225,8 +227,7 @@ export default function Dashboard() {
       await setDoc(doc(db, 'reviews', reviewId), newReview);
       
       // Update submission status to under_review
-      await setDoc(doc(db, 'submissions', submissionToAssign.id), {
-        ...submissionToAssign,
+      await updateDoc(doc(db, 'submissions', submissionToAssign.id), {
         status: 'under_review',
         updatedAt: new Date().toISOString()
       });
@@ -237,8 +238,10 @@ export default function Dashboard() {
       setIsAssignReviewerOpen(false);
       setSubmissionToAssign(null);
       setSelectedReviewerId('');
+      toast.success('Reviewer assigned successfully');
     } catch (error) {
       console.error("Error assigning reviewer", error);
+      toast.error('Failed to assign reviewer. Please try again.');
     } finally {
       setIsAssigning(false);
     }
@@ -310,6 +313,9 @@ export default function Dashboard() {
             )}
             {isStaff && (
               <TabsTrigger value="admin-users">Users</TabsTrigger>
+            )}
+            {isStaff && (
+              <TabsTrigger value="admin-analytics">Analytics</TabsTrigger>
             )}
             {isReader && (
               <TabsTrigger value="reader">Reader Access</TabsTrigger>
@@ -611,6 +617,112 @@ export default function Dashboard() {
               </Card>
             </TabsContent>
           )}
+
+          {isStaff && (
+            <TabsContent value="admin-analytics">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader className="bg-white border-b border-slate-100 pb-4">
+                    <CardTitle className="text-sm font-medium text-slate-500">Total Submissions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="text-3xl font-bold text-slate-900">{submissions.length}</div>
+                    <p className="text-xs text-slate-500 mt-1">All time manuscripts</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader className="bg-white border-b border-slate-100 pb-4">
+                    <CardTitle className="text-sm font-medium text-slate-500">Total Users</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="text-3xl font-bold text-slate-900">{usersList.length}</div>
+                    <p className="text-xs text-slate-500 mt-1">Registered accounts</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader className="bg-white border-b border-slate-100 pb-4">
+                    <CardTitle className="text-sm font-medium text-slate-500">Active Subscribers</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="text-3xl font-bold text-slate-900">
+                      {subscribers.filter(s => s.role !== 'unsubscribed_reader' && (!s.subscriptionDate || new Date(s.subscriptionDate).getTime() >= Date.now() - 86400000 * 365)).length}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">Paid & Institutional</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader className="bg-white border-b border-slate-100">
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="mr-2 h-5 w-5 text-blue-700" />
+                      Submissions by Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Submitted', value: submissions.filter(s => s.status === 'submitted').length },
+                            { name: 'Under Review', value: submissions.filter(s => s.status === 'under_review').length },
+                            { name: 'Revision', value: submissions.filter(s => s.status === 'revision_requested').length },
+                            { name: 'Accepted', value: submissions.filter(s => s.status === 'accepted').length },
+                            { name: 'Rejected', value: submissions.filter(s => s.status === 'rejected').length }
+                          ].filter(d => d.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          <Cell fill="#3b82f6" /> {/* blue-500 */}
+                          <Cell fill="#f59e0b" /> {/* amber-500 */}
+                          <Cell fill="#a855f7" /> {/* purple-500 */}
+                          <Cell fill="#22c55e" /> {/* green-500 */}
+                          <Cell fill="#ef4444" /> {/* red-500 */}
+                        </Pie>
+                        <RechartsTooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader className="bg-white border-b border-slate-100">
+                    <CardTitle className="flex items-center">
+                      <Users className="mr-2 h-5 w-5 text-blue-700" />
+                      Users by Role
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: 'Admin', count: usersList.filter(u => u.role === 'admin').length },
+                          { name: 'Editor', count: usersList.filter(u => u.role === 'editor').length },
+                          { name: 'Reviewer', count: usersList.filter(u => u.role === 'reviewer').length },
+                          { name: 'Author', count: usersList.filter(u => u.role === 'author').length },
+                          { name: 'Reader', count: usersList.filter(u => ['subscribed_reader', 'unsubscribed_reader', 'institutional'].includes(u.role)).length }
+                        ].filter(d => d.count > 0)}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                        <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+                        <RechartsTooltip cursor={{ fill: '#f1f5f9' }} />
+                        <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          )}
+
           {isReader && (
             <TabsContent value="reader">
               <Card className="border-slate-200 shadow-sm">

@@ -13,6 +13,7 @@ import AuthorGuidelines from './pages/AuthorGuidelines';
 import Subscription from './pages/Subscription';
 import Checkout from './pages/Checkout';
 import AuthorProfile from './pages/AuthorProfile';
+import Profile from './pages/Profile';
 import { Toaster } from '@/components/ui/sonner';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="articles" element={<Articles />} />
             <Route path="articles/:id" element={<ArticleDetail />} />
             <Route path="author/:name" element={<AuthorProfile />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="archive" element={<Archive />} />
             <Route path="submit" element={<Submit />} />
             <Route path="author-guidelines" element={<AuthorGuidelines />} />

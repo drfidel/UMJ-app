@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/lib/AuthContext';
@@ -30,7 +31,9 @@ interface Article {
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const [article, setArticle] = useState<Article | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingRelated, setLoadingRelated] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const { user, profile } = useAuth();
 
@@ -78,6 +81,58 @@ export default function ArticleDetail() {
 
     fetchArticle();
   }, [id]);
+
+  useEffect(() => {
+    const fetchRelatedArticles = async () => {
+      if (!article) return;
+      
+      setLoadingRelated(true);
+      try {
+        const relatedMap = new Map<string, Article>();
+
+        // 1. Fetch by shared keywords
+        if (article.keywords && article.keywords.length > 0) {
+          const keywordsQuery = query(
+            collection(db, 'articles'),
+            where('keywords', 'array-contains-any', article.keywords.slice(0, 10))
+          );
+          const keywordsSnap = await getDocs(keywordsQuery);
+          keywordsSnap.forEach(doc => {
+            if (doc.id !== article.id) {
+              relatedMap.set(doc.id, { id: doc.id, ...doc.data() } as Article);
+            }
+          });
+        }
+
+        // 2. Fetch by shared authors
+        if (article.authors && article.authors.length > 0) {
+          const authorsQuery = query(
+            collection(db, 'articles'),
+            where('authors', 'array-contains-any', article.authors.slice(0, 10))
+          );
+          const authorsSnap = await getDocs(authorsQuery);
+          authorsSnap.forEach(doc => {
+            if (doc.id !== article.id) {
+              relatedMap.set(doc.id, { id: doc.id, ...doc.data() } as Article);
+            }
+          });
+        }
+
+        const combined = Array.from(relatedMap.values());
+        
+        // Sort by publication date (newest first)
+        combined.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+        setRelatedArticles(combined.slice(0, 3));
+      } catch (error) {
+        console.error("Error fetching related articles:", error);
+      } finally {
+        setLoadingRelated(false);
+      }
+    };
+
+    fetchRelatedArticles();
+  }, [article]);
 
   if (loading) {
     return (
@@ -298,6 +353,41 @@ export default function ArticleDetail() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Related Articles Section */}
+        <div className="mt-12 mb-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Related Articles</h2>
+          
+          {loadingRelated ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
+            </div>
+          ) : relatedArticles.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {relatedArticles.map((relatedArticle) => (
+                <Card key={relatedArticle.id} className="hover:shadow-md transition-shadow border-slate-200">
+                  <CardContent className="p-6">
+                    <div className="text-xs text-slate-500 mb-2">
+                      {format(new Date(relatedArticle.publishedAt), 'MMM d, yyyy')}
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2 leading-tight">
+                      <Link to={`/articles/${relatedArticle.id}`} className="hover:text-blue-700 transition-colors">
+                        {relatedArticle.title}
+                      </Link>
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      {relatedArticle.authors.join(', ')}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-8 text-center">
+              <p className="text-slate-500">No related articles found.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

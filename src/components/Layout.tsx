@@ -93,10 +93,13 @@ export default function Layout() {
                       </DropdownMenuLabel>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <Link to="/dashboard" className="w-full h-full">Dashboard</Link>
+                    <DropdownMenuItem onClick={() => window.location.href = '/profile'} className="cursor-pointer">
+                      My Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={signOut}>
+                    <DropdownMenuItem onClick={() => window.location.href = '/dashboard'} className="cursor-pointer">
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={signOut} className="cursor-pointer">
                       Log out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
