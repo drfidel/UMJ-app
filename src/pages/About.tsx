@@ -1,9 +1,14 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import SEO from '@/components/SEO';
 
 export default function About() {
   return (
     <div className="bg-white min-h-screen py-12">
+      <SEO 
+        title="About UMJ" 
+        description="Learn about the Uganda Medical Journal (UMJ), its aims and scope, open access policy, peer review process, and editorial contact information."
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-slate-900 mb-8">About UMJ</h1>
         

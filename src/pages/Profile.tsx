@@ -13,7 +13,7 @@ import { Navigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 
 export default function Profile() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isDemoMode } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -36,6 +36,14 @@ export default function Profile() {
       if (!user) return;
       
       setLoadingHistory(true);
+
+      if (isDemoMode) {
+        setSubmissions([]);
+        setReviews([]);
+        setLoadingHistory(false);
+        return;
+      }
+
       try {
         // Fetch user's submissions
         const subQuery = query(
@@ -58,7 +66,11 @@ export default function Profile() {
         revs.sort((a: any, b: any) => new Date(b.completedAt || b.assignedAt).getTime() - new Date(a.completedAt || a.assignedAt).getTime());
         setReviews(revs);
       } catch (error) {
-        console.error("Error fetching history:", error);
+        if (error instanceof Error && error.message.includes('offline')) {
+          // Silent fallback
+        } else {
+          console.error("Error fetching history:", error);
+        }
       } finally {
         setLoadingHistory(false);
       }
@@ -67,7 +79,7 @@ export default function Profile() {
     if (user) {
       fetchHistory();
     }
-  }, [user]);
+  }, [user, isDemoMode]);
 
   if (loading) {
     return (

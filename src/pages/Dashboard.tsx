@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy, setDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
+import { collection, query, where, getDocs, orderBy, setDoc, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user, profile, loading, isDemoMode } = useAuth();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -47,6 +48,14 @@ export default function Dashboard() {
   const [publishIssue, setPublishIssue] = useState('');
   const [publishDoi, setPublishDoi] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Subscription management state
+  const [isManageSubModalOpen, setIsManageSubModalOpen] = useState(false);
+  const [subscriberToManage, setSubscriberToManage] = useState<any | null>(null);
+  const [manageSubPlan, setManageSubPlan] = useState('');
+  const [manageSubStatus, setManageSubStatus] = useState('');
+  const [isUpdatingSub, setIsUpdatingSub] = useState(false);
+  const [bookmarkedArticlesList, setBookmarkedArticlesList] = useState<any[]>([]);
 
   const isStaff = profile?.role === 'admin' || profile?.role === 'editor';
   const isReviewer = profile?.role === 'reviewer' || isStaff;
@@ -105,6 +114,38 @@ export default function Dashboard() {
                 authorUid: 'other-author',
               }
             ]);
+            
+            // Mock published articles for the author
+            setPublishedArticles([
+              {
+                id: 'pub-1',
+                title: 'A Comprehensive Study on Malaria Prevention',
+                abstract: 'This study explores various prevention methods...',
+                authorUid: user.uid,
+                authors: [profile.displayName || 'Jane Doe'],
+                volume: '45',
+                issue: '3',
+                doi: '10.1234/umaj.2023.45.3',
+                publishedAt: new Date(Date.now() - 86400000 * 100).toISOString(),
+                views: 1245,
+                downloads: 340,
+                citations: 12
+              },
+              {
+                id: 'pub-2',
+                title: 'Healthcare Infrastructure in Rural Communities',
+                abstract: 'Analyzing the challenges and opportunities...',
+                authorUid: user.uid,
+                authors: [profile.displayName || 'Jane Doe', 'John Smith'],
+                volume: '44',
+                issue: '1',
+                doi: '10.1234/umaj.2022.44.1',
+                publishedAt: new Date(Date.now() - 86400000 * 400).toISOString(),
+                views: 3502,
+                downloads: 890,
+                citations: 45
+              }
+            ]);
           }
           if (isReviewer || isStaff) {
             setReviews([
@@ -143,6 +184,20 @@ export default function Dashboard() {
               { uid: 'user-4', displayName: 'Alice Johnson', email: 'alice@example.com', role: 'subscribed_reader' },
             ]);
           }
+          if (profile?.bookmarkedArticles && profile.bookmarkedArticles.length > 0) {
+            setBookmarkedArticlesList([
+              {
+                id: profile.bookmarkedArticles[0],
+                title: 'Advances in Tropical Medicine',
+                authors: ['Dr. Samuel Mukasa', 'Dr. Sarah Kizza'],
+                abstract: 'A comprehensive review of recent developments...',
+                volume: '44',
+                issue: '2',
+                doi: '10.1234/umaj.2023.44.2',
+                publishedAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+              }
+            ]);
+          }
           setDataLoading(false);
         }, 500);
         return;
@@ -160,6 +215,15 @@ export default function Dashboard() {
           // Sort manually since we can't easily compound query without index
           subs.sort((a: any, b: any) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
           setSubmissions(subs);
+
+          if (!isStaff) {
+            const authorArticlesQuery = query(
+              collection(db, 'articles'),
+              where('authorUid', '==', user.uid)
+            );
+            const authorArticlesSnap = await getDocs(authorArticlesQuery);
+            setPublishedArticles(authorArticlesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          }
         }
 
         // Fetch Reviewer Assignments
@@ -211,6 +275,16 @@ export default function Dashboard() {
           const usersQuery = query(collection(db, 'users'));
           const usersSnap = await getDocs(usersQuery);
           setUsersList(usersSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
+        }
+
+        // Fetch bookmarked articles
+        if (profile?.bookmarkedArticles && profile.bookmarkedArticles.length > 0) {
+          const promises = profile.bookmarkedArticles.map(async (id) => {
+            const articleSnap = await getDoc(doc(db, 'articles', id));
+            return articleSnap.exists() ? { id: articleSnap.id, ...articleSnap.data() } : null;
+          });
+          const bookmarkedData = (await Promise.all(promises)).filter(Boolean);
+          setBookmarkedArticlesList(bookmarkedData);
         }
 
       } catch (error) {
@@ -268,6 +342,19 @@ export default function Dashboard() {
         status: 'under_review',
         updatedAt: new Date().toISOString()
       });
+
+      // Send a notification to the reviewer
+      const notificationId = crypto.randomUUID();
+      const notification = {
+        id: notificationId,
+        userId: selectedReviewerId,
+        title: "New Manuscript Assignment",
+        message: `You have been assigned to review the manuscript: "${submissionToAssign.title.substring(0, 50)}...". Please visit your dashboard to accept or decline.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        link: '/dashboard',
+      };
+      await setDoc(doc(db, 'notifications', notificationId), notification);
 
       // Update local state
       setSubmissions(prev => prev.map(s => s.id === submissionToAssign.id ? { ...s, status: 'under_review' } : s));
@@ -442,6 +529,78 @@ export default function Dashboard() {
     }
   };
 
+  const handleOpenManageSub = (subscriber: any) => {
+    setSubscriberToManage(subscriber);
+    setManageSubPlan(subscriber.subscriptionPlan || 'Individual');
+    const isExpired = subscriber.role === 'unsubscribed_reader' || 
+      (subscriber.subscriptionDate && new Date(subscriber.subscriptionDate).getTime() < Date.now() - 86400000 * 365);
+    setManageSubStatus(isExpired ? 'expired' : 'active');
+    setIsManageSubModalOpen(true);
+  };
+
+  const handleSaveSubscription = async () => {
+    if (!subscriberToManage) return;
+    setIsUpdatingSub(true);
+
+    try {
+      const role = manageSubStatus === 'expired' ? 'unsubscribed_reader' : (manageSubPlan === 'Institutional' ? 'institutional' : 'subscribed_reader');
+      const subscriptionDate = manageSubStatus === 'active' && (!subscriberToManage.subscriptionDate || new Date(subscriberToManage.subscriptionDate).getTime() < Date.now() - 86400000 * 365) 
+         ? new Date().toISOString() 
+         : subscriberToManage.subscriptionDate;
+         
+      const updates = {
+        subscriptionPlan: manageSubPlan,
+        role: role,
+        subscriptionDate: subscriptionDate
+      };
+
+      if (isDemoMode) {
+        setTimeout(() => {
+          setSubscribers(prev => prev.map(s => s.uid === subscriberToManage.uid ? { ...s, ...updates } : s));
+          setUsersList(prev => prev.map(u => u.uid === subscriberToManage.uid ? { ...u, role: role } : u));
+          setIsManageSubModalOpen(false);
+          setIsUpdatingSub(false);
+          toast.success('Subscription updated successfully (Demo Mode)');
+        }, 500);
+        return;
+      }
+
+      await updateDoc(doc(db, 'users', subscriberToManage.uid), updates);
+      setSubscribers(prev => prev.map(s => s.uid === subscriberToManage.uid ? { ...s, ...updates } : s));
+      setUsersList(prev => prev.map(u => u.uid === subscriberToManage.uid ? { ...u, role: role } : u));
+      
+      setIsManageSubModalOpen(false);
+      toast.success('Subscription updated successfully');
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      toast.error('Failed to update subscription');
+    } finally {
+      if (!isDemoMode) setIsUpdatingSub(false);
+    }
+  };
+
+  const handleCancelReaderSubscription = async () => {
+    if (!user) return;
+    if (!window.confirm("Are you sure you want to cancel your subscription? Your premium access will be revoked immediately.")) return;
+
+    try {
+      if (isDemoMode) {
+        toast.success('Subscription cancelled successfully (Demo Mode)');
+        window.location.reload();
+        return;
+      }
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        role: 'unsubscribed_reader',
+      });
+      toast.success('Subscription cancelled successfully');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      toast.error('Failed to cancel subscription');
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'submitted':
@@ -474,6 +633,9 @@ export default function Dashboard() {
             {isAuthor && (
               <TabsTrigger value="submissions">My Submissions</TabsTrigger>
             )}
+            {isAuthor && (
+              <TabsTrigger value="author-analytics">My Analytics</TabsTrigger>
+            )}
             {isReviewer && (
               <TabsTrigger value="reviews">My Reviews</TabsTrigger>
             )}
@@ -492,6 +654,7 @@ export default function Dashboard() {
             {isReader && (
               <TabsTrigger value="reader">Reader Access</TabsTrigger>
             )}
+            <TabsTrigger value="bookmarks">Saved Articles</TabsTrigger>
           </TabsList>
 
           {isAuthor && (
@@ -504,7 +667,7 @@ export default function Dashboard() {
                 <CardContent className="p-0">
                   {dataLoading ? (
                     <div className="p-8 text-center text-slate-500">Loading submissions...</div>
-                  ) : submissions.length > 0 ? (
+                  ) : submissions.filter(s => s.authorUid === user.uid).length > 0 ? (
                     <Table>
                       <TableHeader className="bg-slate-50">
                         <TableRow>
@@ -552,6 +715,125 @@ export default function Dashboard() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+          )}
+
+          {isAuthor && (
+            <TabsContent value="author-analytics">
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Published Articles</CardTitle>
+                      <BookOpen className="h-4 w-4 text-slate-500" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-slate-900">
+                        {publishedArticles.length}
+                      </div>
+                      <p className="text-xs text-slate-500">Total lifetime publications</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Global Views</CardTitle>
+                      <Eye className="h-4 w-4 text-blue-500" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-slate-900">
+                        {publishedArticles.reduce((acc, curr) => acc + (curr.views || 0), 0).toLocaleString()}
+                      </div>
+                      <p className="text-xs text-slate-500">Across all published works</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Citations</CardTitle>
+                      <MessageSquare className="h-4 w-4 text-orange-500" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-slate-900">
+                        {publishedArticles.reduce((acc, curr) => acc + (curr.citations || 0), 0).toLocaleString()}
+                      </div>
+                      <p className="text-xs text-slate-500">Tracked citations via DOI</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-blue-900 to-indigo-900 text-white border-transparent shadow-md">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-blue-100">Author Rank</CardTitle>
+                      <BarChart3 className="h-4 w-4 text-blue-300" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-white">
+                        Top {publishedArticles.length > 0 ? Math.max(5, Math.ceil(100 / publishedArticles.length)) : 100}%
+                      </div>
+                      <p className="text-xs text-blue-200">Of UMAJ contributing authors</p>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {publishedArticles.length > 0 ? (
+                  <Card className="border-slate-200">
+                    <CardHeader>
+                      <CardTitle className="text-xl">Readership Engagement</CardTitle>
+                      <CardDescription>Monthly abstract views vs. full PDF downloads</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[350px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={analyticsDataMonthByMonth}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                            <XAxis 
+                              dataKey="name" 
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: '#64748B', fontSize: 12 }}
+                              dy={10}
+                            />
+                            <YAxis 
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: '#64748B', fontSize: 12 }}
+                              dx={-10}
+                            />
+                            <RechartsTooltip 
+                              cursor={{ stroke: '#CBD5E1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                              contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            />
+                            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                            <Line 
+                              type="monotone" 
+                              name="Abstract Views"
+                              dataKey="views" 
+                              stroke="#1E40AF" 
+                              strokeWidth={3} 
+                              dot={{ r: 4, fill: '#1E40AF', strokeWidth: 0 }}
+                              activeDot={{ r: 6, strokeWidth: 0 }}
+                            />
+                            <Line 
+                              type="monotone" 
+                              name="PDF Downloads"
+                              dataKey="downloads" 
+                              stroke="#38BDF8" 
+                              strokeWidth={3} 
+                              dot={{ r: 4, fill: '#38BDF8', strokeWidth: 0 }}
+                              activeDot={{ r: 6, strokeWidth: 0 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-slate-200 border-dashed bg-slate-50 shadow-none">
+                    <CardContent className="p-12 text-center">
+                      <BarChart3 className="mx-auto h-12 w-12 text-slate-300 mb-4" />
+                      <h3 className="text-lg font-medium text-slate-900 mb-1">No analytics available yet</h3>
+                      <p className="text-slate-500">Submit a manuscript to get started tracking your impact.</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
           )}
 
@@ -744,7 +1026,14 @@ export default function Dashboard() {
                               {subscriber.subscriptionDate ? format(new Date(subscriber.subscriptionDate), 'MMM d, yyyy') : 'N/A'}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="ghost" size="sm" className="text-blue-700">Manage</Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-blue-700"
+                                onClick={() => handleOpenManageSub(subscriber)}
+                              >
+                                Manage
+                              </Button>
                             </TableCell>
                           </TableRow>
                         );
@@ -984,11 +1273,63 @@ export default function Dashboard() {
                         View Subscription Options
                       </Link>
                     )}
+                    {['subscribed_reader', 'institutional'].includes(profile.role) && (
+                      <Button variant="destructive" onClick={handleCancelReaderSubscription}>
+                        Cancel Subscription
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
           )}
+
+          <TabsContent value="bookmarks">
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="bg-white border-b border-slate-100">
+                <CardTitle>Saved Articles</CardTitle>
+                <CardDescription>Your personal reading list.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                {bookmarkedArticlesList.length > 0 ? (
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Authors</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {bookmarkedArticlesList.map((article) => (
+                        <TableRow key={article.id}>
+                          <TableCell className="font-medium text-slate-900">
+                            {article.title}
+                          </TableCell>
+                          <TableCell className="text-slate-500">
+                            {article.authors?.join(', ')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Link to={`/article/${article.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                              Read Bookmarked
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="p-12 text-center text-slate-500">
+                    <BookOpen className="mx-auto h-10 w-10 text-slate-300 mb-3" />
+                    <p>You haven't bookmarked any articles yet.</p>
+                    <Link to="/articles" className="mt-4 text-blue-600 hover:underline">
+                      Explore Articles
+                    </Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -1049,7 +1390,12 @@ export default function Dashboard() {
               Close
             </Button>
             {selectedSubmission?.status === 'revision_requested' && (
-              <Button className="bg-blue-700 hover:bg-blue-800 text-white">
+              <Button 
+                className="bg-blue-700 hover:bg-blue-800 text-white"
+                onClick={() => {
+                  navigate(`/submit?revision=true&id=${selectedSubmission.id}`);
+                }}
+              >
                 Submit Revision
               </Button>
             )}
@@ -1240,6 +1586,62 @@ export default function Dashboard() {
               disabled={isPublishing}
             >
               {isPublishing ? 'Publishing...' : 'Publish Article'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Subscription Modal */}
+      <Dialog open={isManageSubModalOpen} onOpenChange={setIsManageSubModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Manage Subscription</DialogTitle>
+            <DialogDescription>
+              Update subscription details for {subscriberToManage?.displayName || 'this user'}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {subscriberToManage && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subPlan">Subscription Plan</Label>
+                  <Select value={manageSubPlan} onValueChange={setManageSubPlan}>
+                    <SelectTrigger id="subPlan">
+                      <SelectValue placeholder="Select plan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Individual">Individual</SelectItem>
+                      <SelectItem value="Institutional">Institutional</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subStatus">Status</Label>
+                  <Select value={manageSubStatus} onValueChange={setManageSubStatus}>
+                    <SelectTrigger id="subStatus">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="expired">Expired / Revoked</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManageSubModalOpen(false)} disabled={isUpdatingSub}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white" 
+              onClick={handleSaveSubscription}
+              disabled={isUpdatingSub}
+            >
+              {isUpdatingSub ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>

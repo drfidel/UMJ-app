@@ -2,7 +2,16 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+const firebaseConfig = {
+  apiKey: "dummy-api-key",
+  authDomain: "dummy-auth-domain",
+  projectId: "dummy-project-id",
+  storageBucket: "dummy-storage-bucket",
+  messagingSenderId: "dummy-sender-id",
+  appId: "dummy-app-id",
+  firestoreDatabaseId: "dummy-db-id"
+};
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, addDoc, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
@@ -14,21 +14,44 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertCircle, Upload, CheckCircle2, FileText } from 'lucide-react';
+import { AlertCircle, Upload, CheckCircle2, FileText, X, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 const formSchema = z.object({
   title: z.string().min(10, 'Title must be at least 10 characters.').max(500, 'Title is too long.'),
   abstract: z.string().min(100, 'Abstract must be at least 100 characters.').max(5000, 'Abstract is too long.'),
-  coAuthors: z.string().optional(),
+  coAuthors: z.array(z.object({ name: z.string().min(2, "Name must be at least 2 characters") })).optional(),
   keywords: z.string().min(3, 'Please provide at least one keyword.'),
+  specialty: z.string().min(1, 'Please select a medical specialty.'),
   isRevision: z.boolean().default(false).optional(),
   originalSubmissionId: z.string().optional(),
 });
 
+export const medicalSpecialties = [
+  "General Medicine",
+  "Internal Medicine",
+  "Surgery",
+  "Pediatrics",
+  "Obstetrics & Gynecology",
+  "Public Health",
+  "Infectious Diseases",
+  "Tropical Medicine",
+  "Cardiology",
+  "Neurology",
+  "Oncology",
+  "Psychiatry",
+  "Dermatology",
+  "Family Medicine",
+  "Other"
+];
+
 export default function Submit() {
-  const { user, profile, signInWithGoogle } = useAuth();
+  const { user, profile, signInWithGoogle, isDemoMode } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isRevisionParam = searchParams.get('revision') === 'true';
+  const revisionIdParam = searchParams.get('id') || '';
+
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -41,11 +64,17 @@ export default function Submit() {
     defaultValues: {
       title: '',
       abstract: '',
-      coAuthors: '',
+      coAuthors: [],
       keywords: '',
-      isRevision: false,
-      originalSubmissionId: '',
+      specialty: '',
+      isRevision: isRevisionParam,
+      originalSubmissionId: revisionIdParam,
     },
+  });
+
+  const { fields: coAuthorFields, append: appendCoAuthor, remove: removeCoAuthor } = useFieldArray({
+    control: form.control,
+    name: "coAuthors",
   });
 
   const isRevision = form.watch('isRevision');
@@ -54,6 +83,22 @@ export default function Submit() {
   useEffect(() => {
     const fetchRevisions = async () => {
       if (!user) return;
+      if (isDemoMode) {
+        // Mock demo revisions if author
+        if (user.uid.includes('author') || isRevisionParam) {
+          setRevisionsNeeded([
+            { 
+              id: revisionIdParam || 'sub-2', 
+              title: 'Quantum Computing: A Review of Current Algorithms', 
+              abstract: 'A comprehensive review of quantum algorithms, highlighting their potential advantages over classical counterparts in specific computational domains.', 
+              coAuthors: [], 
+              keywords: ['Quantum', 'Algorithms'], 
+              status: 'revision_requested' 
+            }
+          ]);
+        }
+        return;
+      }
       try {
         const q = query(
           collection(db, 'submissions'),
@@ -63,11 +108,15 @@ export default function Submit() {
         const snap = await getDocs(q);
         setRevisionsNeeded(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
-        console.error("Error fetching revisions:", error);
+        if (error instanceof Error && error.message.includes('offline')) {
+          // Silent fallback
+        } else {
+          console.error("Error fetching revisions:", error);
+        }
       }
     };
     fetchRevisions();
-  }, [user]);
+  }, [user, isDemoMode]);
 
   // Auto-fill form when a revision is selected
   useEffect(() => {
@@ -76,15 +125,17 @@ export default function Submit() {
       if (selected) {
         form.setValue('title', selected.title);
         form.setValue('abstract', selected.abstract);
-        form.setValue('coAuthors', (selected.coAuthors || []).join(', '));
+        form.setValue('coAuthors', (selected.coAuthors || []).map((name: string) => ({ name })));
         form.setValue('keywords', (selected.keywords || []).join(', '));
+        if (selected.specialty) form.setValue('specialty', selected.specialty);
       }
     } else if (!isRevision) {
       form.reset({
         title: '',
         abstract: '',
-        coAuthors: '',
+        coAuthors: [],
         keywords: '',
+        specialty: '',
         isRevision: false,
         originalSubmissionId: '',
       });
@@ -151,6 +202,15 @@ export default function Submit() {
   const processSubmission = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
 
+    if (isDemoMode) {
+      setTimeout(() => {
+        setIsSuccess(true);
+        toast.success(values.isRevision ? 'Demo: Revised manuscript submitted successfully!' : 'Demo: Manuscript submitted successfully!');
+        setIsSubmitting(false);
+      }, 1500);
+      return;
+    }
+
     try {
       // 1. Upload file to Storage
       const fileRef = ref(storage, `manuscripts/${user!.uid}/${Date.now()}_${file!.name}`);
@@ -159,7 +219,7 @@ export default function Submit() {
 
       // 2. Process keywords and co-authors
       const keywordsList = values.keywords.split(',').map(k => k.trim()).filter(k => k);
-      const coAuthorsList = values.coAuthors ? values.coAuthors.split(',').map(a => a.trim()).filter(a => a) : [];
+      const coAuthorsList = values.coAuthors ? values.coAuthors.map(a => a.name.trim()).filter(a => a) : [];
 
       // 3. Save to Firestore
       if (values.isRevision && values.originalSubmissionId) {
@@ -170,6 +230,7 @@ export default function Submit() {
           abstract: values.abstract,
           coAuthors: coAuthorsList,
           keywords: keywordsList,
+          specialty: values.specialty,
           fileUrl,
           status: 'submitted', // Change status back to submitted
           updatedAt: new Date().toISOString(),
@@ -183,6 +244,7 @@ export default function Submit() {
           abstract: values.abstract,
           coAuthors: coAuthorsList,
           keywords: keywordsList,
+          specialty: values.specialty,
           fileUrl,
           status: 'submitted',
           submittedAt: new Date().toISOString(),
@@ -336,14 +398,17 @@ export default function Submit() {
                   </div>
                   
                   {isRevision && (
-                    <div className="space-y-2 pl-6">
-                      <Label htmlFor="originalSubmissionId" className="text-blue-900 font-medium">Select Manuscript to Revise *</Label>
+                    <div className="space-y-3 pl-6 mt-4 border-l-4 border-blue-500 rounded-l-sm py-2">
+                      <div>
+                        <Label htmlFor="originalSubmissionId" className="text-blue-900 font-semibold text-lg">Select Manuscript to Revise *</Label>
+                        <p className="text-xs text-blue-700/80 mt-1 mb-3 bg-blue-100 p-2 rounded-md inline-block">Please locate and select the original submission entry below if it was not prefilled automatically, so we can link these versions together correctly.</p>
+                      </div>
                       <Select 
                         value={originalSubmissionId} 
                         onValueChange={(val) => form.setValue('originalSubmissionId', val)}
                       >
                         <SelectTrigger className="bg-white border-blue-200">
-                          <SelectValue placeholder="Select a manuscript..." />
+                          <SelectValue placeholder="Locate and select the original submission..." />
                         </SelectTrigger>
                         <SelectContent>
                           {revisionsNeeded.map(rev => (
@@ -353,7 +418,7 @@ export default function Submit() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {form.formState.errors.originalSubmissionId && <p className="text-sm text-red-500">{form.formState.errors.originalSubmissionId.message}</p>}
+                      {form.formState.errors.originalSubmissionId && <p className="text-sm text-red-500 font-medium">{form.formState.errors.originalSubmissionId.message}</p>}
                     </div>
                   )}
                 </div>
@@ -377,12 +442,62 @@ export default function Submit() {
                 {form.formState.errors.abstract && <p className="text-sm text-red-500">{form.formState.errors.abstract.message}</p>}
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="specialty" className="text-slate-900 font-semibold">Medical Specialty *</Label>
+                <Select
+                  onValueChange={(val) => form.setValue('specialty', val)}
+                  defaultValue={form.getValues('specialty')}
+                >
+                  <SelectTrigger className="bg-slate-50">
+                    <SelectValue placeholder="Select a specialty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {medicalSpecialties.map((specialty) => (
+                      <SelectItem key={specialty} value={specialty}>
+                        {specialty}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.specialty && <p className="text-sm text-red-500">{form.formState.errors.specialty.message}</p>}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <Label htmlFor="coAuthors" className="text-slate-900 font-semibold">Co-Authors</Label>
-                  <Input id="coAuthors" placeholder="e.g., John Doe, Jane Smith" className="bg-slate-50" {...form.register('coAuthors')} />
-                  <p className="text-sm text-slate-500">Comma-separated list of co-authors. You are automatically included as the primary author.</p>
-                  {form.formState.errors.coAuthors && <p className="text-sm text-red-500">{form.formState.errors.coAuthors.message}</p>}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-slate-900 font-semibold mb-2 block">Co-Authors</Label>
+                    <p className="text-sm text-slate-500 mb-2">You are automatically included as the primary author.</p>
+                  </div>
+                  <div className="space-y-3">
+                    {coAuthorFields.map((field, index) => (
+                      <div key={field.id} className="flex items-center gap-2">
+                        <Input 
+                          placeholder="e.g., John Doe" 
+                          className="bg-slate-50 flex-grow" 
+                          {...form.register(`coAuthors.${index}.name` as const)} 
+                        />
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeCoAuthor(index)}
+                          className="text-slate-400 hover:text-red-500 hover:bg-red-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {form.formState.errors.coAuthors && <p className="text-sm text-red-500">Please enter valid names for all co-authors.</p>}
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => appendCoAuthor({ name: '' })}
+                    className="mt-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> Add Co-Author
+                  </Button>
                 </div>
 
                 <div className="space-y-2">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ export default function IssueDetail() {
   const { volumeId, issueId } = useParams<{ volumeId: string; issueId: string }>();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isDemoMode } = useAuth();
 
   // Fallback dummy data for specific mock issues from the archive if db is empty
   const dummyArticles: Article[] = [
@@ -79,29 +81,40 @@ export default function IssueDetail() {
       
       setLoading(true);
       try {
-        const q = query(
-          collection(db, 'articles'),
-          where('volume', '==', parseInt(volumeId)),
-          where('issue', '==', parseInt(issueId))
-        );
-        const querySnapshot = await getDocs(q);
-        
         let fetchedArticles: Article[] = [];
-        if (!querySnapshot.empty) {
-          fetchedArticles = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Article[];
-        } else {
-          // Fall back to matching dummy articles
+
+        if (isDemoMode) {
           fetchedArticles = dummyArticles.filter(
             a => a.volume === parseInt(volumeId) && a.issue === parseInt(issueId)
           );
+        } else {
+          const q = query(
+            collection(db, 'articles'),
+            where('volume', '==', parseInt(volumeId)),
+            where('issue', '==', parseInt(issueId))
+          );
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            fetchedArticles = querySnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            })) as Article[];
+          } else {
+            // Fall back to matching dummy articles
+            fetchedArticles = dummyArticles.filter(
+              a => a.volume === parseInt(volumeId) && a.issue === parseInt(issueId)
+            );
+          }
         }
         
         setArticles(fetchedArticles);
       } catch (error) {
-        console.error("Error fetching issue articles, falling back to dummy data", error);
+        if (error instanceof Error && error.message.includes('offline')) {
+          // Silently fallback
+        } else {
+          console.error("Error fetching issue articles, falling back to dummy data", error);
+        }
         setArticles(dummyArticles.filter(
           a => a.volume === parseInt(volumeId) && a.issue === parseInt(issueId)
         ));
@@ -111,7 +124,7 @@ export default function IssueDetail() {
     };
 
     fetchArticles();
-  }, [volumeId, issueId]);
+  }, [volumeId, issueId, isDemoMode]);
 
   if (loading) {
     return (

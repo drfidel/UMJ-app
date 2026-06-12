@@ -3,6 +3,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, FileText, Users, Globe, Search } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 export default function Home() {
   // Dummy data for featured articles
@@ -14,6 +15,7 @@ export default function Home() {
       abstract: 'This study investigates the current prevalence rates and associated risk factors for malaria infection among pregnant women attending antenatal care in rural health centers across Uganda...',
       tags: ['Malaria', 'Maternal Health', 'Epidemiology'],
       date: 'Oct 15, 2023',
+      isCurrentIssue: true,
     },
     {
       id: '2',
@@ -35,13 +37,17 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <SEO 
+        title="Home" 
+        description="Uganda Medical Journal (UMJ) is the official publication of the Uganda Medical Association, dedicated to disseminating high-quality, peer-reviewed research."
+      />
       {/* Hero Section */}
       <section className="bg-blue-900 text-white py-20 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 bg-[url('https://picsum.photos/seed/medical/1920/1080')] bg-cover bg-center mix-blend-overlay"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-3xl">
-              <Badge className="bg-red-600 hover:bg-red-700 text-white mb-6 px-3 py-1 text-sm">
+              <Badge className="bg-red-600 hover:bg-red-700 text-white mb-6 px-3 py-1 text-sm border-none">
                 Volume 45, Issue 3 Now Available
               </Badge>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
@@ -51,11 +57,11 @@ export default function Home() {
                 The official publication of the Uganda Medical Association, dedicated to disseminating high-quality, peer-reviewed research to improve healthcare outcomes across the region.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/articles" className={buttonVariants({ size: "lg", className: "bg-dark text-blue-900 hover:bg-slate-100 font-semibold" })}>
+                <Link to="/articles" className={buttonVariants({ size: "lg", className: "bg-background text-foreground hover:bg-slate-100 font-semibold" })}>
                     Read Latest Articles
                     <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
-                <Link to="/submit" className={buttonVariants({ size: "lg", variant: "outline", className: "text-black border-white hover:bg-white/10 font-semibold" })}>
+                <Link to="/submit" className={buttonVariants({ size: "lg", variant: "outline", className: "text-foreground bg-transparent border-white hover:bg-white/10 hover:text-white font-semibold" })}>
                     Submit Manuscript
                 </Link>
               </div>
@@ -122,7 +128,14 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredArticles.map((article) => (
-              <Card key={article.id} className="flex flex-col h-full hover:shadow-lg transition-shadow border-slate-200">
+              <Card key={article.id} className="flex flex-col h-full hover:shadow-lg transition-shadow border-slate-200 relative overflow-visible">
+                {article.isCurrentIssue && (
+                  <div className="absolute -top-3 -right-3 z-10">
+                    <Badge className="bg-red-600 hover:bg-red-700 text-white shadow-md border-none font-bold uppercase tracking-wide">
+                      Current Issue
+                    </Badge>
+                  </div>
+                )}
                 <CardHeader>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {article.tags.map(tag => (

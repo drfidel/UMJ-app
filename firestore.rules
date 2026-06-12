@@ -17,23 +17,23 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
          (request.auth.token.email == "akiyofidel@gmail.com" && request.auth.token.email_verified == true));
     }
 
     function isEditor() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor';
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor';
     }
     
     function isReviewer() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reviewer';
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reviewer';
     }
 
     function isAuthor() {
       return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'author';
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'author';
     }
 
     function hasRequiredFields(fields) {
@@ -69,7 +69,7 @@ service cloud.firestore {
     }
 
     function isValidArticle(data) {
-      return hasOnlyAllowedFields(['id', 'title', 'abstract', 'authors', 'keywords', 'pdfUrl', 'doi', 'volume', 'issue', 'publishedAt', 'views', 'downloads']) &&
+      return hasOnlyAllowedFields(['id', 'title', 'abstract', 'authors', 'keywords', 'pdfUrl', 'doi', 'volume', 'issue', 'publishedAt', 'views', 'downloads', 'specialty']) &&
              data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
              data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
              data.abstract is string && data.abstract.size() > 0 && data.abstract.size() < 5000 &&
@@ -81,11 +81,12 @@ service cloud.firestore {
              data.issue is number && data.issue > 0 &&
              data.publishedAt is string &&
              (!('views' in data) || data.views is number) &&
-             (!('downloads' in data) || data.downloads is number);
+             (!('downloads' in data) || data.downloads is number) &&
+             (!('specialty' in data) || (data.specialty is string && data.specialty.size() < 100));
     }
 
     function isValidSubmission(data) {
-      return hasOnlyAllowedFields(['id', 'authorUid', 'title', 'abstract', 'coAuthors', 'keywords', 'fileUrl', 'status', 'submittedAt', 'updatedAt', 'editorFeedback']) &&
+      return hasOnlyAllowedFields(['id', 'authorUid', 'title', 'abstract', 'coAuthors', 'keywords', 'fileUrl', 'status', 'submittedAt', 'updatedAt', 'editorFeedback', 'specialty']) &&
              data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
              data.authorUid is string && data.authorUid.size() > 0 && data.authorUid.size() < 100 &&
              data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
@@ -96,7 +97,8 @@ service cloud.firestore {
              data.status in ['submitted', 'under_review', 'accepted', 'rejected', 'revision_requested'] &&
              data.submittedAt is string &&
              data.updatedAt is string &&
-             (!('editorFeedback' in data) || (data.editorFeedback is string && data.editorFeedback.size() < 10000));
+             (!('editorFeedback' in data) || (data.editorFeedback is string && data.editorFeedback.size() < 10000)) &&
+             (!('specialty' in data) || (data.specialty is string && data.specialty.size() < 100));
     }
 
     function isValidReview(data) {
@@ -111,9 +113,28 @@ service cloud.firestore {
              (!('completedAt' in data) || data.completedAt is string);
     }
 
+    function isValidNotification(data) {
+      return hasOnlyAllowedFields(['id', 'userId', 'title', 'message', 'read', 'createdAt', 'link']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.userId is string && data.userId.size() > 0 &&
+             data.title is string && data.title.size() > 0 &&
+             data.message is string && data.message.size() > 0 &&
+             data.read is bool &&
+             data.createdAt is string &&
+             (!('link' in data) || data.link is string);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
+
+    match /notifications/{notificationId} {
+      allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId;
+      allow create: if isAuthenticated() && (isAdmin() || isEditor() || request.resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
 
     match /users/{userId} {
       // Anyone can read public user profiles (needed for author/reviewer names)
@@ -149,11 +170,17 @@ service cloud.firestore {
 
     match /submissions/{submissionId} {
       // Authors can read their own submissions. Admins, editors, and assigned reviewers can read.
-      allow read: if isAuthenticated() && (
+      allow get: if isAuthenticated() && (
         resource.data.authorUid == request.auth.uid || 
         isAdmin() ||
         isEditor() ||
         (isReviewer() && exists(/databases/$(database)/documents/reviews/$(request.auth.uid + '_' + submissionId))) // Simplified check for reviewer access
+      );
+      
+      allow list: if isAuthenticated() && (
+        resource.data.authorUid == request.auth.uid || 
+        isAdmin() ||
+        isEditor()
       );
       
       // Authors can create submissions
@@ -200,6 +227,16 @@ service cloud.firestore {
                     );
                     
       allow delete: if isAdmin();
+    }
+    match /article_responses/{responseId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+                    hasOnlyAllowedFields(['articleId', 'userId', 'userName', 'userRole', 'content', 'createdAt']) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.content is string && 
+                    request.resource.data.content.size() > 0 &&
+                    request.resource.data.content.size() < 2000;
+      allow update, delete: if isAdmin() || isEditor() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
   }
 }

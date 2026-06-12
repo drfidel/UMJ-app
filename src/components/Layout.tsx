@@ -15,6 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { NotificationsMenu } from './NotificationsMenu';
+import { ThemeToggle } from './ThemeToggle';
 
 export default function Layout() {
   const { user, profile, signInWithGoogle, loginAsDemoUser, signOut } = useAuth();
@@ -32,10 +34,12 @@ export default function Layout() {
     { name: 'Articles', path: '/articles' },
     { name: 'Authors', path: '/authors' },
     { name: 'Archive', path: '/archive' },
+    { name: 'Metrics', path: '/metrics' },
     { name: 'Submit Manuscript', path: '/submit' },
     { name: 'Pricing', path: '/subscription' },
     { name: 'Editorial Board', path: '/editorial-board' },
     { name: 'About', path: '/about' },
+    { name: 'UMA Website', path: 'https://www.uma.ug', isExternal: true },
   ];
 
   const testRoles = [
@@ -49,18 +53,18 @@ export default function Layout() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border sticky top-0 z-50 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-2">
-                <BookOpen className="h-8 w-8 text-blue-700" />
-                <span className="font-bold text-xl text-slate-900 hidden sm:block">
+                <BookOpen className="h-8 w-8 text-primary" />
+                <span className="font-bold text-xl hidden sm:block">
                   Uganda Medical Journal
                 </span>
-                <span className="font-bold text-xl text-slate-900 sm:hidden">
+                <span className="font-bold text-xl sm:hidden">
                   UMAJ
                 </span>
               </Link>
@@ -69,26 +73,41 @@ export default function Layout() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
               {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className="text-sm font-medium text-slate-600 hover:text-blue-700 transition-colors"
-                >
-                  {link.name}
-                </Link>
+                link.isExternal ? (
+                  <a
+                    key={link.path}
+                    href={link.path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {link.name}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                )
               ))}
             </nav>
 
             {/* User Actions */}
             <div className="hidden md:flex items-center space-x-4">
+              <ThemeToggle />
               {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="relative h-10 w-10 rounded-full outline-none hover:bg-slate-100 flex items-center justify-center">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={profile?.photoURL} alt={profile?.displayName} />
-                        <AvatarFallback>{profile?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                      </Avatar>
-                  </DropdownMenuTrigger>
+                <>
+                  <NotificationsMenu />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="relative h-10 w-10 rounded-full outline-none hover:bg-slate-100 flex items-center justify-center">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={profile?.photoURL} alt={profile?.displayName} />
+                          <AvatarFallback>{profile?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                    </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end">
                     <DropdownMenuGroup>
                       <DropdownMenuLabel className="font-normal">
@@ -115,6 +134,7 @@ export default function Layout() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </>
               ) : (
                 <div className="flex items-center space-x-2">
                   <DropdownMenu>
@@ -141,10 +161,12 @@ export default function Layout() {
             </div>
 
             {/* Mobile menu button */}
-            <div className="flex items-center md:hidden">
+            <div className="flex items-center md:hidden gap-2">
+              <ThemeToggle />
+              {user && <NotificationsMenu />}
               <Button
                 variant="ghost"
-                className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100"
+                className="inline-flex items-center justify-center p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
                 <span className="sr-only">Open main menu</span>
@@ -160,17 +182,30 @@ export default function Layout() {
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-200">
+          <div className="md:hidden bg-background border-b border-border">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-blue-700 hover:bg-slate-50"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {link.name}
-                </Link>
+                link.isExternal ? (
+                  <a
+                    key={link.path}
+                    href={link.path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-primary hover:bg-accent"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-primary hover:bg-accent"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {link.name}
+                  </Link>
+                )
               ))}
               {user ? (
                 <>
@@ -236,9 +271,13 @@ export default function Layout() {
               <ul className="space-y-2">
                 <li><Link to="/articles" className="text-slate-400 hover:text-white text-sm">Current Issue</Link></li>
                 <li><Link to="/authors" className="text-slate-400 hover:text-white text-sm">Authors</Link></li>
+                <li><Link to="/archive" className="text-slate-400 hover:text-white text-sm">Archive</Link></li>
+                <li><Link to="/metrics" className="text-slate-400 hover:text-white text-sm">Journal Metrics</Link></li>
                 <li><Link to="/submit" className="text-slate-400 hover:text-white text-sm">Submit Manuscript</Link></li>
                 <li><Link to="/editorial-board" className="text-slate-400 hover:text-white text-sm">Editorial Board</Link></li>
                 <li><Link to="/about" className="text-slate-400 hover:text-white text-sm">About UMJ</Link></li>
+                <li><Link to="/contact" className="text-slate-400 hover:text-white text-sm">Contact Us</Link></li>
+                <li><a href="https://www.uma.ug" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white text-sm">UMA Website</a></li>
               </ul>
             </div>
             <div>
