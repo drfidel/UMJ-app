@@ -1,140 +1,135 @@
 import { Link } from 'react-router-dom';
 import { buttonVariants } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { CheckCircle2, FileText, AlertCircle, ArrowRight } from 'lucide-react';
+import { ArrowRight, Download } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 export default function AuthorGuidelines() {
   return (
-    <div className="bg-slate-50 min-h-screen py-12">
+    <div className="bg-background min-h-screen py-12">
+      <SEO
+        title="Author Guidelines"
+        description="Manuscript formatting, reporting checklists, ethics requirements, and submission instructions for the Uganda Medical Journal."
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">Author Guidelines & Submission Requirements</h1>
-          <p className="text-lg text-slate-600">
-            Comprehensive instructions and requirements for submitting your manuscript to the Uganda Medical Association Journal (UMAJ). Please read these guidelines carefully before beginning your submission.
-          </p>
+        <div className="border-b border-border pb-6 mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Instructions for Authors
+            </p>
+            <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-foreground">
+              Author Guidelines & Submission Requirements
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-2xl">
+              Comprehensive preparation standards, reporting checklists, and ethical requirements for submitting manuscripts to the Uganda Medical Journal.
+            </p>
+          </div>
+          <Link
+            to="/submit"
+            className={buttonVariants({ className: 'bg-primary text-primary-foreground shrink-0 self-start md:self-auto' })}
+          >
+            Submit Manuscript <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
         </div>
 
-        <div className="space-y-8">
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
-                <FileText className="mr-3 h-6 w-6 text-blue-700" />
-                1. Types of Articles Accepted
-              </h2>
-              <ul className="space-y-3 text-slate-700 ml-9 list-disc">
-                <li><strong>Original Research:</strong> Full-length reports of original clinical or basic science research. Maximum 3,500 words, 50 references, and 6 tables/figures.</li>
-                <li><strong>Review Articles:</strong> Comprehensive reviews on topics of broad medical interest. Maximum 4,000 words, 75 references.</li>
-                <li><strong>Case Reports:</strong> Brief reports of clinical cases of unusual interest. Maximum 1,500 words, 15 references, and 2 tables/figures.</li>
-                <li><strong>Letters to the Editor:</strong> Brief comments on recently published articles or other topics of clinical interest. Maximum 500 words, 5 references.</li>
-              </ul>
-            </CardContent>
-          </Card>
+        <div className="space-y-6">
+          <section className="bg-card border border-border rounded-lg p-7">
+            <h2 className="font-editorial text-2xl font-bold text-foreground mb-4">
+              1. Article Categories & Word Limits
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="py-2.5 pr-4 font-semibold">Article Type</th>
+                    <th className="py-2.5 px-4 font-semibold">Max Words</th>
+                    <th className="py-2.5 px-4 font-semibold">References</th>
+                    <th className="py-2.5 pl-4 font-semibold">Tables / Figures</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border font-mono tabular-nums text-xs sm:text-sm">
+                  <tr>
+                    <td className="py-3 pr-4 font-sans font-medium text-foreground">Original Investigation</td>
+                    <td className="py-3 px-4 text-muted-foreground">3,500</td>
+                    <td className="py-3 px-4 text-muted-foreground">50</td>
+                    <td className="py-3 pl-4 text-muted-foreground">6</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 pr-4 font-sans font-medium text-foreground">Systematic / Clinical Review</td>
+                    <td className="py-3 px-4 text-muted-foreground">4,000</td>
+                    <td className="py-3 px-4 text-muted-foreground">75</td>
+                    <td className="py-3 pl-4 text-muted-foreground">6</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 pr-4 font-sans font-medium text-foreground">Case Report</td>
+                    <td className="py-3 px-4 text-muted-foreground">1,500</td>
+                    <td className="py-3 px-4 text-muted-foreground">15</td>
+                    <td className="py-3 pl-4 text-muted-foreground">2</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 pr-4 font-sans font-medium text-foreground">Letter to the Editor</td>
+                    <td className="py-3 px-4 text-muted-foreground">500</td>
+                    <td className="py-3 px-4 text-muted-foreground">5</td>
+                    <td className="py-3 pl-4 text-muted-foreground">1</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
-                <CheckCircle2 className="mr-3 h-6 w-6 text-blue-700" />
-                2. Manuscript Formatting
-              </h2>
-              <div className="text-slate-700 ml-9 space-y-4">
-                <p>All submissions must adhere to the following formatting requirements:</p>
-                <ul className="space-y-2 list-disc ml-5">
-                  <li><strong>File Format:</strong> Microsoft Word (.docx) or PDF format.</li>
-                  <li><strong>Font:</strong> Times New Roman, Arial, or Calibri, 12-point size.</li>
-                  <li><strong>Spacing:</strong> Double-spaced throughout, including abstract, references, and tables.</li>
-                  <li><strong>Margins:</strong> 1-inch (2.54 cm) margins on all sides.</li>
-                  <li><strong>Page Numbers:</strong> Numbered consecutively, starting with the title page.</li>
-                  <li><strong>Language:</strong> English (UK or US spelling is acceptable, but must be consistent).</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+          <section className="bg-card border border-border rounded-lg p-7">
+            <h2 className="font-editorial text-2xl font-bold text-foreground mb-4">
+              2. Manuscript Formatting & Templates
+            </h2>
+            <ul className="space-y-2.5 text-sm text-muted-foreground list-disc pl-5 mb-6">
+              <li><strong className="text-foreground">File Format:</strong> Microsoft Word (.docx) or LaTeX source archive (.zip).</li>
+              <li><strong className="text-foreground">Typography & Margins:</strong> Double-spaced 12-point serif or sans-serif font with 1-inch (2.54 cm) margins.</li>
+              <li><strong className="text-foreground">Abstract Structure:</strong> Structured 250-word abstract (Background, Methods, Results, Conclusion) plus 3–6 MeSH-aligned keywords.</li>
+              <li><strong className="text-foreground">Citation Standard:</strong> Vancouver numbering style with complete DOI links where assigned.</li>
+            </ul>
+            <div className="flex flex-wrap gap-3 pt-4 border-t border-border">
+              <a
+                href="/templates/UMAJ_Manuscript_Template.docx"
+                download
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                <Download className="mr-2 h-4 w-4" /> Download Word Template (.docx)
+              </a>
+              <a
+                href="/templates/UMAJ_LaTeX_Template.zip"
+                download
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                <Download className="mr-2 h-4 w-4" /> Download LaTeX Template (.zip)
+              </a>
+            </div>
+          </section>
 
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
-                <FileText className="mr-3 h-6 w-6 text-blue-700" />
-                3. Manuscript Structure
-              </h2>
-              <div className="text-slate-700 ml-9 space-y-4">
-                <p>Original research articles should be organized in the following sections:</p>
-                <ol className="space-y-3 list-decimal ml-5">
-                  <li><strong>Title Page:</strong> Include the article title, authors' full names, affiliations, and contact information for the corresponding author.</li>
-                  <li><strong>Abstract:</strong> Structured abstract (Background, Methods, Results, Conclusion) of no more than 250 words.</li>
-                  <li><strong>Keywords:</strong> 3 to 6 keywords for indexing purposes.</li>
-                  <li><strong>Introduction:</strong> State the background and objective of the study.</li>
-                  <li><strong>Methods:</strong> Describe the study design, participants, interventions, and statistical analysis.</li>
-                  <li><strong>Results:</strong> Present findings logically with tables and figures where appropriate.</li>
-                  <li><strong>Discussion:</strong> Interpret the results, compare with existing literature, and note limitations.</li>
-                  <li><strong>Conclusion:</strong> Summarize the main findings and their implications.</li>
-                  <li><strong>References:</strong> Vancouver style formatting.</li>
-                </ol>
-              </div>
-            </CardContent>
-          </Card>
+          <section className="bg-card border border-border rounded-lg p-7">
+            <h2 className="font-editorial text-2xl font-bold text-foreground mb-4">
+              3. Reporting Standards & Ethics Compliance
+            </h2>
+            <ul className="space-y-2.5 text-sm text-muted-foreground list-disc pl-5">
+              <li><strong className="text-foreground">Reporting Guidelines:</strong> Randomized trials must follow CONSORT; observational studies STROBE; systematic reviews PRISMA.</li>
+              <li><strong className="text-foreground">IRB / REC Approval:</strong> All human-subject research must state institutional ethics approval reference numbers and informed consent procedures.</li>
+              <li><strong className="text-foreground">Originality & Plagiarism Screening:</strong> Every submission undergoes automated similarity screening prior to peer review.</li>
+              <li><strong className="text-foreground">Conflicts of Interest:</strong> Financial, institutional, and personal disclosures are mandatory for all co-authors.</li>
+            </ul>
+          </section>
 
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
-                <AlertCircle className="mr-3 h-6 w-6 text-blue-700" />
-                4. Ethical Guidelines
-              </h2>
-              <div className="text-slate-700 ml-9 space-y-4">
-                <p>UMAJ strictly adheres to ethical standards in publishing:</p>
-                <ul className="space-y-2 list-disc ml-5">
-                  <li><strong>Plagiarism:</strong> All manuscripts are screened for plagiarism. Submissions with unoriginal content will be rejected immediately.</li>
-                  <li><strong>IRB Approval:</strong> Research involving human subjects must include a statement of approval from an Institutional Review Board (IRB) or ethics committee.</li>
-                  <li><strong>Informed Consent:</strong> Patient anonymity must be preserved. Any identifiable patient information requires explicit written consent.</li>
-                  <li><strong>Conflict of Interest:</strong> Authors must declare any financial or personal relationships that could be viewed as potential conflicts of interest.</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
-                <FileText className="mr-3 h-6 w-6 text-blue-700" />
-                5. Open Access Policy Details
-              </h2>
-              <div className="text-slate-700 ml-9 space-y-4">
-                <p>UMAJ offers an Open Access publishing option to maximize the visibility and impact of your research:</p>
-                <ul className="space-y-2 list-disc ml-5">
-                  <li><strong>Creative Commons License:</strong> Open access articles are published under a Creative Commons Attribution (CC BY) license, allowing free distribution and adaptation with proper attribution.</li>
-                  <li><strong>Article Processing Charges (APC):</strong> An APC applies to articles accepted for open access publication to cover editorial and hosting costs. Waivers may be available for authors from low-income countries.</li>
-                  <li><strong>Subscription Model:</strong> Authors may also choose the traditional subscription model at no cost, where the article is available to subscribers and institutional members.</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center">
-                <CheckCircle2 className="mr-3 h-6 w-6 text-blue-700" />
-                6. How to Cite UMAJ Articles
-              </h2>
-              <div className="text-slate-700 ml-9 space-y-4">
-                <p>Proper citation ensures authors receive credit for their work. UMAJ recommends the Vancouver or APA citation styles:</p>
-                <ul className="space-y-2 list-disc ml-5">
-                  <li><strong>Vancouver Style:</strong> Author(s). Article title. Uganda Medical Association Journal. Year;Volume(Issue):Page range. DOI.</li>
-                  <li><strong>APA Style:</strong> Author(s). (Year). Article title. <em>Uganda Medical Association Journal</em>, <em>Volume</em>(Issue), Page range. DOI.</li>
-                  <li><strong>Citation Tools:</strong> You can use the "Cite" button on any article page to automatically generate citations in multiple formats or download citation files for reference managers like EndNote, Zotero, or Mendeley.</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center mt-12">
-            <h3 className="text-2xl font-bold text-slate-900 mb-3">Ready to Submit?</h3>
-            <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
-              Ensure your manuscript meets all the guidelines above before proceeding to the submission portal.
-            </p>
-            <Link to="/submit" className={buttonVariants({ size: "lg", className: "bg-blue-700 hover:bg-blue-800 text-white" })}>
-              Proceed to Submission Portal <ArrowRight className="ml-2 h-5 w-5" />
+          <section className="bg-card border border-border rounded-lg p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-editorial text-xl font-bold text-foreground">Ready to Submit Your Manuscript?</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Proceed to the online submission portal to upload your manuscript and co-author metadata.
+              </p>
+            </div>
+            <Link
+              to="/submit"
+              className={buttonVariants({ size: 'lg', className: 'bg-primary text-primary-foreground shrink-0' })}
+            >
+              Submission Portal <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
-          </div>
+          </section>
         </div>
       </div>
     </div>

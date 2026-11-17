@@ -3,121 +3,56 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { FileText, Lock, Unlock, Calendar, BookOpen, ArrowLeft } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { FileText, Lock, Unlock, Calendar, ArrowLeft, Download, Eye, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface Article {
-  id: string;
-  title: string;
-  abstract: string;
-  authors: string[];
-  keywords: string[];
-  volume: number;
-  issue: number;
-  publishedAt: string;
-  isOpenAccess?: boolean;
-}
+import SEO from '@/components/SEO';
+import { CURATED_ARTICLES, JournalArticle } from '@/data/journalData';
+import { DUMMY_PDF_DATA_URI } from './ArticleDetail';
 
 export default function IssueDetail() {
   const { volumeId, issueId } = useParams<{ volumeId: string; issueId: string }>();
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [articles, setArticles] = useState<JournalArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const { isDemoMode } = useAuth();
-
-  // Fallback dummy data for specific mock issues from the archive if db is empty
-  const dummyArticles: Article[] = [
-    {
-      id: '1',
-      title: 'Prevalence and Risk Factors of Malaria in Pregnant Women in Rural Uganda',
-      authors: ['Dr. Jane Namukasa', 'Dr. Peter Okello'],
-      abstract: 'This study investigates the current prevalence rates and associated risk factors for malaria infection among pregnant women attending antenatal care in rural health centers across Uganda. Results indicate a need for intensified preventive measures.',
-      keywords: ['Malaria', 'Maternal Health', 'Epidemiology'],
-      volume: 45,
-      issue: 3,
-      publishedAt: new Date('2023-10-15').toISOString(),
-      isOpenAccess: false,
-    },
-    {
-      id: '2',
-      title: 'Outcomes of Antiretroviral Therapy in Pediatric HIV Patients: A 5-Year Retrospective Cohort',
-      authors: ['Dr. Sarah Kizza', 'Prof. Emmanuel Mukiibi'],
-      abstract: 'A comprehensive review of treatment outcomes, adherence rates, and viral load suppression among pediatric patients receiving ART at Mulago National Referral Hospital. The study highlights challenges in adolescent transition.',
-      keywords: ['HIV/AIDS', 'Pediatrics', 'Infectious Diseases'],
-      volume: 45,
-      issue: 3,
-      publishedAt: new Date('2023-11-02').toISOString(),
-      isOpenAccess: true,
-    },
-    {
-      id: '3',
-      title: 'Integration of Traditional Medicine with Modern Healthcare in Managing Non-Communicable Diseases',
-      authors: ['Dr. Moses Byaruhanga'],
-      abstract: 'Exploring the complementary role of traditional herbal remedies alongside conventional treatments for hypertension and diabetes in Ugandan communities. The paper proposes a framework for safe integration.',
-      keywords: ['Public Health', 'Non-Communicable Diseases'],
-      volume: 45,
-      issue: 2,
-      publishedAt: new Date('2023-08-10').toISOString(),
-      isOpenAccess: true,
-    },
-    {
-      id: '4',
-      title: 'Maternal Mortality Trends in Eastern Uganda: 2015-2022',
-      authors: ['Dr. Florence Akello', 'Dr. David Otim'],
-      abstract: 'An analysis of maternal mortality ratios in Eastern Uganda over an 8-year period, identifying primary causes of death and evaluating the impact of recent health system interventions.',
-      keywords: ['Maternal Health', 'Public Health', 'Obstetrics'],
-      volume: 44,
-      issue: 4,
-      publishedAt: new Date('2022-12-05').toISOString(),
-      isOpenAccess: false,
-    }
-  ];
 
   useEffect(() => {
     const fetchArticles = async () => {
       if (!volumeId || !issueId) return;
-      
+      const volNum = parseInt(volumeId);
+      const issNum = parseInt(issueId);
+      const fallback = CURATED_ARTICLES.filter((a) => a.volume === volNum && a.issue === issNum);
+
       setLoading(true);
       try {
-        let fetchedArticles: Article[] = [];
-
         if (isDemoMode) {
-          fetchedArticles = dummyArticles.filter(
-            a => a.volume === parseInt(volumeId) && a.issue === parseInt(issueId)
-          );
-        } else {
-          const q = query(
-            collection(db, 'articles'),
-            where('volume', '==', parseInt(volumeId)),
-            where('issue', '==', parseInt(issueId))
-          );
-          const querySnapshot = await getDocs(q);
-          
-          if (!querySnapshot.empty) {
-            fetchedArticles = querySnapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            })) as Article[];
-          } else {
-            // Fall back to matching dummy articles
-            fetchedArticles = dummyArticles.filter(
-              a => a.volume === parseInt(volumeId) && a.issue === parseInt(issueId)
-            );
-          }
+          setArticles(fallback);
+          setLoading(false);
+          return;
         }
-        
-        setArticles(fetchedArticles);
+
+        const q = query(
+          collection(db, 'articles'),
+          where('volume', '==', volNum),
+          where('issue', '==', issNum)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const fetchedArticles = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as JournalArticle[];
+          setArticles(fetchedArticles);
+        } else {
+          setArticles(fallback);
+        }
       } catch (error) {
-        if (error instanceof Error && error.message.includes('offline')) {
-          // Silently fallback
-        } else {
-          console.error("Error fetching issue articles, falling back to dummy data", error);
+        if (!(error instanceof Error && error.message.includes('offline'))) {
+          console.error('Error fetching issue articles, falling back to curated archive', error);
         }
-        setArticles(dummyArticles.filter(
-          a => a.volume === parseInt(volumeId) && a.issue === parseInt(issueId)
-        ));
+        setArticles(fallback);
       } finally {
         setLoading(false);
       }
@@ -128,8 +63,10 @@ export default function IssueDetail() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20 min-h-[50vh] items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
+      <div className="max-w-4xl mx-auto px-4 py-16 space-y-4 animate-pulse">
+        <div className="h-4 bg-muted rounded w-32" />
+        <div className="h-8 bg-muted rounded w-1/2" />
+        <div className="h-40 bg-muted rounded w-full" />
       </div>
     );
   }
@@ -137,98 +74,137 @@ export default function IssueDetail() {
   const isPublished = articles.length > 0;
 
   return (
-    <div className="bg-slate-50 min-h-screen py-12">
+    <div className="bg-background min-h-screen py-12">
+      <SEO
+        title={`Volume ${volumeId}, Issue ${issueId}`}
+        description={`Table of contents for Uganda Medical Journal Volume ${volumeId}, Issue ${issueId}.`}
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <Link to="/archive" className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Archive
+        <div className="border-b border-border pb-6 mb-8">
+          <Link
+            to="/archive"
+            className="inline-flex items-center text-xs font-semibold text-primary hover:underline mb-4"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
+            Back to Journal Archive
           </Link>
-          <div className="flex items-center gap-3 mb-2">
-            <Badge variant="outline" className="bg-blue-100 text-blue-800 text-sm py-1 border-blue-200">
-              Volume {volumeId}
-            </Badge>
-            <Badge variant="outline" className="bg-blue-100 text-blue-800 text-sm py-1 border-blue-200">
-              Issue {issueId}
-            </Badge>
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 mt-2">
-            Issue Articles
+          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-1 tabular-nums">
+            Volume {volumeId} · Issue {issueId}
+          </p>
+          <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-foreground">
+            Issue Table of Contents
           </h1>
         </div>
 
         {!isPublished ? (
-          <Card className="text-center py-16 border-slate-200 border-dashed">
-            <CardHeader>
-              <div className="mx-auto w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
-                <Calendar className="h-8 w-8" />
-              </div>
-              <CardTitle className="text-2xl text-slate-700">Coming Soon</CardTitle>
-              <CardDescription className="text-lg mt-2 font-medium">
-                This issue has not been published yet. Check back later for updates.
-              </CardDescription>
-            </CardHeader>
-            <CardFooter className="justify-center">
-              <Link to="/archive" className={buttonVariants({ variant: "outline", className: "mt-4" })}>
-                Return to Archive
-              </Link>
-            </CardFooter>
-          </Card>
+          <div className="text-center py-16 bg-card border border-dashed border-border rounded-lg">
+            <Calendar className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+            <h2 className="font-editorial text-2xl font-bold text-foreground mb-2">Forthcoming Issue</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+              This issue is currently in editorial production and has not been published yet.
+            </p>
+            <Link to="/archive" className={buttonVariants({ variant: 'outline' })}>
+              Return to Archive
+            </Link>
+          </div>
         ) : (
-          <div className="space-y-6">
+          <div className="bg-card border border-border rounded-lg divide-y divide-border">
             {articles.map((article) => (
-              <Card key={article.id} className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant={article.isOpenAccess ? "default" : "secondary"} className={article.isOpenAccess ? "bg-green-600" : ""}>
-                      {article.isOpenAccess ? (
-                        <span className="flex items-center"><Unlock className="w-3 h-3 mr-1" /> Open Access</span>
-                      ) : (
-                        <span className="flex items-center"><Lock className="w-3 h-3 mr-1" /> Subscription Required</span>
-                      )}
-                    </Badge>
-                    <span className="text-sm text-slate-500 flex items-center">
-                      <Calendar className="w-3 h-3 mr-1" />
-                      {format(new Date(article.publishedAt), 'MMM yyyy')}
+              <article key={article.id} className="p-6 sm:p-7">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground mb-2">
+                  <span className="font-semibold text-foreground/85">
+                    {article.articleType || 'Research Article'}
+                  </span>
+                  {article.specialty && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span>{article.specialty}</span>
+                    </>
+                  )}
+                  <span aria-hidden="true">·</span>
+                  <span>{format(new Date(article.publishedAt), 'MMMM yyyy')}</span>
+                  <span aria-hidden="true">·</span>
+                  {article.isOpenAccess ? (
+                    <span className="inline-flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400">
+                      <Unlock className="w-3 h-3" /> Open Access
                     </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400">
+                      <Lock className="w-3 h-3" /> Subscription
+                    </span>
+                  )}
+                </div>
+
+                <h2 className="font-editorial text-xl sm:text-2xl font-bold text-foreground mb-2 leading-snug">
+                  <Link
+                    to={`/articles/${article.id}`}
+                    className="hover:text-blue-800 dark:hover:text-blue-400 transition-colors"
+                  >
+                    {article.title}
+                  </Link>
+                </h2>
+
+                <p className="text-sm font-medium text-muted-foreground mb-3">
+                  {article.authors?.join(', ')}
+                </p>
+
+                <p className="text-sm text-muted-foreground line-clamp-3 mb-4 leading-relaxed">
+                  {article.abstract}
+                </p>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/70">
+                  <div className="text-xs text-muted-foreground">
+                    {article.keywords?.slice(0, 4).join(' · ')}
                   </div>
-                  <CardTitle className="text-xl">
-                    <Link to={`/articles/${article.id}`} className="text-blue-900 hover:text-blue-700 hover:underline">
-                      {article.title}
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Dialog>
+                      <DialogTrigger
+                        render={
+                          <Button variant="outline" size="sm" className="h-8 text-xs">
+                            <Eye className="w-3.5 h-3.5 mr-1.5" /> PDF Preview
+                          </Button>
+                        }
+                      />
+                      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 gap-0">
+                        <DialogHeader className="px-6 py-4 border-b border-border">
+                          <DialogTitle className="line-clamp-1 pr-8 text-lg">{article.title}</DialogTitle>
+                          <DialogDescription>PDF Preview</DialogDescription>
+                        </DialogHeader>
+                        <div className="flex-1 overflow-hidden bg-muted">
+                          <iframe src={DUMMY_PDF_DATA_URI} title="PDF Preview" className="w-full h-full border-0" />
+                        </div>
+                        <div className="px-6 py-4 border-t border-border bg-card flex justify-end gap-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const a = document.createElement('a');
+                              a.href = DUMMY_PDF_DATA_URI;
+                              a.download = `${article.title
+                                .substring(0, 30)
+                                .replace(/[^a-z0-9]/gi, '_')
+                                .toLowerCase()}.pdf`;
+                              a.click();
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" /> Download PDF
+                          </Button>
+                          <Link to={`/articles/${article.id}`} className={buttonVariants()}>
+                            Full Article <ArrowRight className="ml-2 w-4 h-4" />
+                          </Link>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Link
+                      to={`/articles/${article.id}`}
+                      className={buttonVariants({ size: 'sm', className: 'h-8 text-xs bg-primary text-primary-foreground' })}
+                    >
+                      <FileText className="w-3.5 h-3.5 mr-1.5" /> Read Article
                     </Link>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm font-medium text-slate-700 mb-3">
-                    {article.authors?.join(', ')}
-                  </p>
-                  <p className="text-sm text-slate-600 line-clamp-3 mb-4">
-                    {article.abstract}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {article.keywords?.slice(0, 4).map(keyword => (
-                      <Badge key={keyword} variant="outline" className="bg-slate-50">
-                        {keyword}
-                      </Badge>
-                    ))}
                   </div>
-                </CardContent>
-                <CardFooter className="bg-slate-50 border-t border-slate-100 flex justify-between items-center py-3">
-                  <div className="text-sm text-slate-500 font-medium flex items-center gap-2">
-                    <span>Vol. {article.volume}</span>
-                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                    <span>Issue {article.issue}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Link to={`/articles/${article.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                      View Details
-                    </Link>
-                    <Button variant="ghost" size="sm" className="text-blue-700 hover:text-blue-800 hover:bg-blue-50">
-                      <FileText className="w-4 h-4 mr-2" /> PDF
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
+                </div>
+              </article>
             ))}
           </div>
         )}

@@ -54,59 +54,62 @@ export default function Subscription() {
   const isAlreadySubscribed = profile && ['subscribed_reader', 'institutional', 'admin', 'editor'].includes(profile.role);
 
   return (
-    <div className="bg-slate-50 min-h-screen py-12">
+    <div className="bg-background min-h-screen py-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">Subscription Plans</h1>
-          <p className="text-lg text-slate-600">
-            Unlock full access to the Uganda Medical Association Journal's extensive archive of peer-reviewed medical research.
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Institutional & Individual Access
+          </p>
+          <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-foreground mb-4">Subscription Plans</h1>
+          <p className="text-base sm:text-lg text-muted-foreground">
+            Unlock full access to the Uganda Medical Journal's complete archive of peer-reviewed clinical research, trials, and regional health policy.
           </p>
         </div>
 
         {isAlreadySubscribed && (
-          <div className="max-w-3xl mx-auto mb-12 bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-green-600 mb-4" />
-            <h2 className="text-2xl font-bold text-green-800 mb-2">You have an active subscription!</h2>
-            <p className="text-green-700">
-              You currently have full access to all articles and features. You can manage your subscription from your dashboard.
+          <div className="max-w-3xl mx-auto mb-12 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6 text-center">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400 mb-3" />
+            <h2 className="font-editorial text-2xl font-bold text-emerald-900 dark:text-emerald-200 mb-2">You have an active subscription</h2>
+            <p className="text-emerald-800 dark:text-emerald-300/90 text-sm">
+              You currently have full access to all articles and archival PDFs. Manage your plan from your dashboard.
             </p>
-            <Button onClick={() => navigate('/dashboard')} className="mt-6 bg-green-700 hover:bg-green-800 text-white">
+            <Button onClick={() => navigate('/dashboard')} className="mt-5">
               Go to Dashboard
             </Button>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
           {/* Free Tier */}
-          <Card className="border-slate-200 shadow-sm flex flex-col">
+          <Card className="border-border bg-card shadow-sm flex flex-col">
             <CardHeader className="text-center pb-4">
-              <CardTitle className="text-2xl text-slate-900">Basic Access</CardTitle>
-              <div className="mt-4 flex justify-center items-baseline text-4xl font-extrabold text-slate-900">
+              <CardTitle className="font-editorial text-2xl text-foreground">Basic Access</CardTitle>
+              <div className="mt-4 flex justify-center items-baseline text-4xl font-bold font-editorial text-foreground">
                 Free
               </div>
-              <CardDescription className="mt-2">For general readers</CardDescription>
+              <CardDescription className="mt-2">For general readers & students</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-              <ul className="space-y-4">
+              <ul className="space-y-4 text-sm">
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                  <span className="text-slate-600">Access to Open Access articles</span>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2.5 shrink-0" />
+                  <span className="text-foreground/85">Access to Open Access articles</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                  <span className="text-slate-600">Read article abstracts</span>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2.5 shrink-0" />
+                  <span className="text-foreground/85">Read structured abstracts</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                  <span className="text-slate-600">Submit manuscripts</span>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2.5 shrink-0" />
+                  <span className="text-foreground/85">Submit manuscripts</span>
                 </li>
                 <li className="flex items-start opacity-50">
-                  <Lock className="h-5 w-5 text-slate-400 mr-2 shrink-0" />
-                  <span className="text-slate-500 line-through">Full text of premium articles</span>
+                  <Lock className="h-5 w-5 text-muted-foreground mr-2.5 shrink-0" />
+                  <span className="text-muted-foreground line-through">Full text of subscription articles</span>
                 </li>
                 <li className="flex items-start opacity-50">
-                  <Lock className="h-5 w-5 text-slate-400 mr-2 shrink-0" />
-                  <span className="text-slate-500 line-through">PDF downloads</span>
+                  <Lock className="h-5 w-5 text-muted-foreground mr-2.5 shrink-0" />
+                  <span className="text-muted-foreground line-through">PDF downloads</span>
                 </li>
               </ul>
             </CardContent>
@@ -118,46 +121,44 @@ export default function Subscription() {
           </Card>
 
           {/* Individual Subscription */}
-          <Card className="border-blue-200 shadow-md relative flex flex-col transform md:-translate-y-4">
-            <div className="absolute top-0 inset-x-0 h-1 bg-blue-600 rounded-t-xl"></div>
-            <div className="absolute -top-4 inset-x-0 flex justify-center">
-              <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                Most Popular
+          <Card className="border-primary/40 bg-card shadow-md relative flex flex-col md:-translate-y-2">
+            <div className="h-1 bg-primary rounded-t-xl"></div>
+            <CardHeader className="text-center pb-4 pt-6">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-primary mb-2 block">
+                Recommended for Clinicians
               </span>
-            </div>
-            <CardHeader className="text-center pb-4 pt-8">
-              <CardTitle className="text-2xl text-blue-900">Individual</CardTitle>
-              <div className="mt-4 flex justify-center items-baseline text-4xl font-extrabold text-slate-900">
+              <CardTitle className="font-editorial text-2xl text-foreground">Individual</CardTitle>
+              <div className="mt-4 flex justify-center items-baseline text-4xl font-bold font-editorial text-foreground tabular-nums">
                 $50
-                <span className="text-xl font-medium text-slate-500 ml-1">/year</span>
+                <span className="text-base font-sans font-medium text-muted-foreground ml-1">/year</span>
               </div>
               <CardDescription className="mt-2">For medical professionals</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-              <ul className="space-y-4">
+              <ul className="space-y-4 text-sm">
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mr-2 shrink-0" />
-                  <span className="text-slate-700 font-medium">Full text access to all articles</span>
+                  <CheckCircle2 className="h-5 w-5 text-primary mr-2.5 shrink-0" />
+                  <span className="text-foreground font-medium">Full text access to all articles</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mr-2 shrink-0" />
-                  <span className="text-slate-700 font-medium">Unlimited PDF downloads</span>
+                  <CheckCircle2 className="h-5 w-5 text-primary mr-2.5 shrink-0" />
+                  <span className="text-foreground font-medium">Unlimited PDF downloads</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mr-2 shrink-0" />
-                  <span className="text-slate-600">Access to complete journal archive</span>
+                  <CheckCircle2 className="h-5 w-5 text-primary mr-2.5 shrink-0" />
+                  <span className="text-muted-foreground">Access to complete 1966–2026 archive</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 mr-2 shrink-0" />
-                  <span className="text-slate-600">Early access to new issues</span>
+                  <CheckCircle2 className="h-5 w-5 text-primary mr-2.5 shrink-0" />
+                  <span className="text-muted-foreground">Early Online First issue access</span>
                 </li>
               </ul>
             </CardContent>
             <CardFooter>
               <Button 
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white" 
+                className="w-full" 
                 onClick={() => navigate('/checkout/individual')}
-                disabled={isAlreadySubscribed}
+                disabled={Boolean(isAlreadySubscribed)}
               >
                 {isAlreadySubscribed ? 'Current Plan' : 'Subscribe Now'}
                 {!isAlreadySubscribed && <CreditCard className="ml-2 h-4 w-4" />}
@@ -166,41 +167,41 @@ export default function Subscription() {
           </Card>
 
           {/* Institutional */}
-          <Card className="border-slate-200 shadow-sm flex flex-col">
+          <Card className="border-border bg-card shadow-sm flex flex-col">
             <CardHeader className="text-center pb-4">
-              <CardTitle className="text-2xl text-slate-900">Institutional</CardTitle>
-              <div className="mt-4 flex justify-center items-baseline text-4xl font-extrabold text-slate-900">
+              <CardTitle className="font-editorial text-2xl text-foreground">Institutional</CardTitle>
+              <div className="mt-4 flex justify-center items-baseline text-4xl font-bold font-editorial text-foreground tabular-nums">
                 $500
-                <span className="text-xl font-medium text-slate-500 ml-1">/year</span>
+                <span className="text-base font-sans font-medium text-muted-foreground ml-1">/year</span>
               </div>
               <CardDescription className="mt-2">For universities & hospitals</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
-              <ul className="space-y-4">
+              <ul className="space-y-4 text-sm">
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                  <span className="text-slate-600">IP-based access for all members</span>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2.5 shrink-0" />
+                  <span className="text-foreground/85">IP-based access for all members</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                  <span className="text-slate-600">Unlimited PDF downloads</span>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2.5 shrink-0" />
+                  <span className="text-foreground/85">Unlimited PDF downloads</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                  <span className="text-slate-600">Usage statistics reporting</span>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2.5 shrink-0" />
+                  <span className="text-foreground/85">COUNTER-compliant usage reporting</span>
                 </li>
                 <li className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-2 shrink-0" />
-                  <span className="text-slate-600">Dedicated account manager</span>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mr-2.5 shrink-0" />
+                  <span className="text-foreground/85">Dedicated account manager</span>
                 </li>
               </ul>
             </CardContent>
             <CardFooter>
               <Button 
                 variant="outline" 
-                className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="w-full"
                 onClick={() => navigate('/checkout/institutional')}
-                disabled={isAlreadySubscribed}
+                disabled={Boolean(isAlreadySubscribed)}
               >
                 {isAlreadySubscribed ? 'Current Plan' : 'Subscribe Now'}
               </Button>

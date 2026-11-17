@@ -228,6 +228,13 @@ service cloud.firestore {
                     
       allow delete: if isAdmin();
     }
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, delete: if isAdmin() || isEditor();
+      allow update: if (isAdmin() || isEditor()) || 
+                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendees']));
+    }
+
     match /article_responses/{responseId} {
       allow read: if true;
       allow create: if isAuthenticated() && 

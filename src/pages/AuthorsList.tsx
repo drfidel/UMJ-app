@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Card, CardContent } from '@/components/ui/card';
-import { Users, Search, FileText, Eye, BookOpen } from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import SEO from '@/components/SEO';
+import { CURATED_ARTICLES } from '@/data/journalData';
 
-interface Article {
+interface ArticleMetricsSource {
   authors: string[];
   views?: number;
   downloads?: number;
@@ -27,85 +28,51 @@ export default function AuthorsList() {
   const [searchTerm, setSearchTerm] = useState('');
   const { isDemoMode } = useAuth();
 
-  // Dummy data fallback
-  const dummyArticles: Article[] = [
-    { authors: ['Dr. Jane Namukasa', 'Dr. Peter Okello'], views: 1250, citations: 15 },
-    { authors: ['Dr. Sarah Kizza', 'Prof. Emmanuel Mukiibi'], views: 800, citations: 8 },
-    { authors: ['Dr. Moses Byaruhanga'], views: 2400, citations: 42 },
-    { authors: ['Dr. Florence Akello', 'Dr. David Otim'], views: 450, citations: 2 },
-    { authors: ['Dr. Jane Namukasa'], views: 200, citations: 3 },
-  ];
-
   useEffect(() => {
+    const buildMap = (list: ArticleMetricsSource[]) => {
+      const authorMetricsMap = new Map<string, AuthorMetrics>();
+      list.forEach((article) => {
+        if (article.authors && Array.isArray(article.authors)) {
+          article.authors.forEach((authorRaw) => {
+            const author = authorRaw.trim();
+            if (!authorMetricsMap.has(author)) {
+              authorMetricsMap.set(author, {
+                name: author,
+                articleCount: 0,
+                totalViews: 0,
+                totalCitations: 0,
+              });
+            }
+            const metrics = authorMetricsMap.get(author)!;
+            metrics.articleCount += 1;
+            metrics.totalViews += article.views || 0;
+            metrics.totalCitations += article.citations || 0;
+          });
+        }
+      });
+      return Array.from(authorMetricsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    };
+
     const fetchAuthors = async () => {
       try {
-        let fetchedArticles: Article[] = [];
+        let fetchedArticles: ArticleMetricsSource[] = [];
 
         if (isDemoMode) {
-          fetchedArticles = dummyArticles;
+          fetchedArticles = CURATED_ARTICLES;
         } else {
           const q = query(collection(db, 'articles'));
           const querySnapshot = await getDocs(q);
-          
-          if (!querySnapshot.empty) {
-            fetchedArticles = querySnapshot.docs.map(doc => doc.data() as Article);
-          } else {
-            fetchedArticles = dummyArticles;
-          }
+          fetchedArticles = !querySnapshot.empty
+            ? querySnapshot.docs.map((doc) => doc.data() as ArticleMetricsSource)
+            : CURATED_ARTICLES;
         }
 
-        const authorMetricsMap = new Map<string, AuthorMetrics>();
-        
-        fetchedArticles.forEach(article => {
-          if (article.authors && Array.isArray(article.authors)) {
-            article.authors.forEach(authorRaw => {
-              const author = authorRaw.trim();
-              if (!authorMetricsMap.has(author)) {
-                authorMetricsMap.set(author, {
-                  name: author,
-                  articleCount: 0,
-                  totalViews: 0,
-                  totalCitations: 0
-                });
-              }
-              const metrics = authorMetricsMap.get(author)!;
-              metrics.articleCount += 1;
-              metrics.totalViews += article.views || 0;
-              metrics.totalCitations += article.citations || 0;
-            });
-          }
-        });
-
-        const sortedAuthors = Array.from(authorMetricsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-        setAuthors(sortedAuthors);
+        setAuthors(buildMap(fetchedArticles));
       } catch (error) {
-        if (error instanceof Error && error.message.includes('offline')) {
-          // Silent fallback
-        } else {
-          console.error("Error fetching authors, falling back to dummy data", error);
+        if (!(error instanceof Error && error.message.includes('offline'))) {
+          console.error('Error fetching authors, falling back to curated archive', error);
         }
-        
-        const authorMetricsMap = new Map<string, AuthorMetrics>();
-        dummyArticles.forEach(article => {
-          if (article.authors && Array.isArray(article.authors)) {
-            article.authors.forEach(authorRaw => {
-              const author = authorRaw.trim();
-              if (!authorMetricsMap.has(author)) {
-                authorMetricsMap.set(author, {
-                  name: author,
-                  articleCount: 0,
-                  totalViews: 0,
-                  totalCitations: 0
-                });
-              }
-              const metrics = authorMetricsMap.get(author)!;
-              metrics.articleCount += 1;
-              metrics.totalViews += article.views || 0;
-              metrics.totalCitations += article.citations || 0;
-            });
-          }
-        });
-        setAuthors(Array.from(authorMetricsMap.values()).sort((a, b) => a.name.localeCompare(b.name)));
+        setAuthors(buildMap(CURATED_ARTICLES));
       } finally {
         setLoading(false);
       }
@@ -114,45 +81,45 @@ export default function AuthorsList() {
     fetchAuthors();
   }, [isDemoMode]);
 
-  const filteredAuthors = authors.filter(author => 
+  const filteredAuthors = authors.filter((author) =>
     author.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Group authors by first letter safely
   const groupedAuthors: Record<string, AuthorMetrics[]> = {};
-  filteredAuthors.forEach(author => {
-    // Determine the letter to group by (handle cases where names start with 'Dr.', 'Prof.', etc.)
+  filteredAuthors.forEach((author) => {
     const cleanName = author.name.replace(/^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)\s+/i, '');
     const firstLetter = cleanName.charAt(0).toUpperCase();
-    
-    if (!groupedAuthors[firstLetter]) {
-      groupedAuthors[firstLetter] = [];
-    }
+    if (!groupedAuthors[firstLetter]) groupedAuthors[firstLetter] = [];
     groupedAuthors[firstLetter].push(author);
   });
 
   const sortedLetters = Object.keys(groupedAuthors).sort();
 
   return (
-    <div className="bg-slate-50 min-h-screen py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4 tracking-tight flex items-center justify-center">
-            <Users className="w-10 h-10 mr-4 text-blue-700" />
-            Our Authors
-          </h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Discover the researchers, clinicians, and academics who have contributed their work to the Uganda Medical Association Journal.
-          </p>
-        </div>
-
-        <div className="mb-10 max-w-md mx-auto relative">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+    <div className="bg-background min-h-screen py-12">
+      <SEO
+        title="Authors Directory"
+        description="Browse researchers, clinicians, and academics contributing to the Uganda Medical Journal."
+      />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="border-b border-border pb-6 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Contributing Investigators
+            </p>
+            <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-foreground">
+              Authors Directory
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-2xl">
+              Explore clinicians, researchers, and health policy scholars who have published in the Uganda Medical Journal.
+            </p>
+          </div>
+          <div className="relative w-full md:w-72 shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search authors..."
-              className="pl-10 h-12 text-base rounded-full border-slate-200 focus-visible:ring-blue-500 shadow-sm"
+              placeholder="Filter authors by name..."
+              className="pl-9 bg-card"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -160,105 +127,85 @@ export default function AuthorsList() {
         </div>
 
         {loading ? (
-          <div className="space-y-12 animate-pulse">
-            {[1, 2].map((group) => (
-              <div key={group}>
-                <div className="flex items-center mb-6">
-                  <div className="h-8 bg-slate-200 rounded w-10"></div>
-                  <div className="h-px bg-slate-200 flex-grow ml-4"></div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pl-0 md:pl-16">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Card key={i} className="h-full border border-slate-200 bg-white overflow-hidden flex flex-col">
-                      <CardContent className="p-6 flex flex-col flex-grow">
-                        <div className="flex items-start space-x-4 mb-4">
-                          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-slate-200"></div>
-                          <div className="flex-1 min-w-0 space-y-2 mt-1">
-                            <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                            <div className="h-3 bg-slate-200 rounded w-1/2"></div>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-auto grid grid-cols-3 divide-x divide-slate-100 bg-slate-50 rounded-lg py-3 px-2 border border-slate-100 items-center">
-                          <div className="flex flex-col items-center space-y-2">
-                            <div className="h-2 bg-slate-200 rounded w-8"></div>
-                            <div className="h-3 bg-slate-200 rounded w-4"></div>
-                          </div>
-                          <div className="flex flex-col items-center space-y-2">
-                            <div className="h-2 bg-slate-200 rounded w-8"></div>
-                            <div className="h-3 bg-slate-200 rounded w-6"></div>
-                          </div>
-                          <div className="flex flex-col items-center space-y-2">
-                            <div className="h-2 bg-slate-200 rounded w-12"></div>
-                            <div className="h-3 bg-slate-200 rounded w-4"></div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-card border border-border rounded-lg p-6 space-y-3">
+                <div className="h-5 bg-muted rounded w-2/3" />
+                <div className="h-4 bg-muted rounded w-1/2" />
               </div>
             ))}
           </div>
         ) : filteredAuthors.length > 0 ? (
-          <div className="space-y-12">
-            {sortedLetters.map(letter => (
-              <div key={letter} className="relative">
-                <div className="flex items-center mb-6">
-                  <div className="text-3xl font-bold text-blue-700 w-12">{letter}</div>
-                  <div className="h-px bg-slate-200 flex-grow ml-4"></div>
+          <div className="space-y-10">
+            {sortedLetters.map((letter) => (
+              <section key={letter}>
+                <div className="flex items-center mb-5">
+                  <span className="font-editorial text-2xl font-bold text-primary w-10">{letter}</span>
+                  <div className="h-px bg-border flex-grow" />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pl-0 md:pl-16">
-                  {groupedAuthors[letter].map(author => (
-                    <Link 
-                      key={author.name} 
-                      to={`/author/${encodeURIComponent(author.name)}`}
-                      className="block group"
-                    >
-                      <Card className="h-full border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all duration-300 bg-white overflow-hidden flex flex-col group-hover:-translate-y-1">
-                        <CardContent className="p-6 flex flex-col flex-grow">
-                          <div className="flex items-start space-x-4 mb-4">
-                            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center font-bold uppercase text-lg border border-blue-100 shadow-sm group-hover:scale-110 transition-transform">
-                              {author.name.replace(/^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)\s+/i, '').substring(0, 2)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-2 leading-tight">
-                                {author.name}
-                              </p>
-                              <p className="text-sm font-medium text-blue-600 mt-1 flex items-center">
-                                View Full Profile <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-0 group-hover:translate-x-1 duration-300">&rarr;</span>
-                              </p>
-                            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {groupedAuthors[letter].map((author) => {
+                    const initials = author.name
+                      .replace(/^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)\s+/i, '')
+                      .split(' ')
+                      .map((p) => p[0])
+                      .join('')
+                      .substring(0, 2)
+                      .toUpperCase();
+                    return (
+                      <Link
+                        key={author.name}
+                        to={`/author/${encodeURIComponent(author.name)}`}
+                        className="group bg-card border border-border rounded-lg p-5 hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col justify-between"
+                      >
+                        <div className="flex items-start gap-3.5 mb-5">
+                          <div className="h-11 w-11 rounded-full bg-muted text-foreground flex items-center justify-center font-editorial font-bold text-sm shrink-0 border border-border">
+                            {initials}
                           </div>
-                          
-                          <div className="mt-auto grid grid-cols-3 divide-x divide-slate-100 bg-slate-50 rounded-lg py-3 px-2 border border-slate-100 items-center text-center">
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center"><FileText className="w-3 h-3 mr-1" />Articles</span>
-                              <span className="font-bold text-slate-800 text-sm">{author.articleCount}</span>
-                            </div>
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center"><Eye className="w-3 h-3 mr-1" />Views</span>
-                              <span className="font-bold text-slate-800 text-sm">{author.totalViews > 999 ? (author.totalViews / 1000).toFixed(1) + 'k' : author.totalViews}</span>
-                            </div>
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center"><BookOpen className="w-3 h-3 mr-1" />Citations</span>
-                              <span className="font-bold text-slate-800 text-sm">{author.totalCitations}</span>
-                            </div>
+                          <div className="min-w-0">
+                            <h2 className="font-editorial text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
+                              {author.name}
+                            </h2>
+                            <span className="text-xs font-medium text-primary inline-flex items-center mt-1">
+                              Author Profile <ArrowRight className="ml-1 h-3 w-3" />
+                            </span>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
+                        </div>
+
+                        <dl className="grid grid-cols-3 border-t border-border pt-3 text-center text-xs">
+                          <div>
+                            <dt className="text-muted-foreground">Articles</dt>
+                            <dd className="font-mono tabular-nums font-semibold text-foreground mt-0.5">
+                              {author.articleCount}
+                            </dd>
+                          </div>
+                          <div className="border-x border-border">
+                            <dt className="text-muted-foreground">Views</dt>
+                            <dd className="font-mono tabular-nums font-semibold text-foreground mt-0.5">
+                              {author.totalViews > 999
+                                ? `${(author.totalViews / 1000).toFixed(1)}k`
+                                : author.totalViews}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="text-muted-foreground">Citations</dt>
+                            <dd className="font-mono tabular-nums font-semibold text-foreground mt-0.5">
+                              {author.totalCitations}
+                            </dd>
+                          </div>
+                        </dl>
+                      </Link>
+                    );
+                  })}
                 </div>
-              </div>
+              </section>
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
-            <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900">No authors found</h3>
-            <p className="text-slate-500 mt-1">
-              {searchTerm ? `No authors match "${searchTerm}"` : 'There are currently no authors in the system.'}
+          <div className="text-center py-16 bg-card rounded-lg border border-border">
+            <h3 className="text-lg font-semibold text-foreground">No authors found</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {searchTerm ? `No contributing authors match "${searchTerm}".` : 'No authors available.'}
             </p>
           </div>
         )}

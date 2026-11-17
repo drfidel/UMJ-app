@@ -70,10 +70,10 @@ export default function Checkout() {
   if (!user) return null;
 
   return (
-    <div className="bg-slate-50 min-h-screen py-12">
+    <div className="bg-background min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <Link to="/subscription" className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+          <Link to="/subscription" className="text-primary hover:underline text-sm font-medium flex items-center">
             &larr; Back to Pricing
           </Link>
         </div>
@@ -81,15 +81,15 @@ export default function Checkout() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Checkout Form */}
           <div className="md:col-span-2">
-            <Card className="border-slate-200 shadow-sm">
+            <Card className="border-border bg-card shadow-sm">
               <CardHeader>
-                <CardTitle className="text-2xl text-slate-900">Checkout</CardTitle>
+                <CardTitle className="font-editorial text-2xl text-foreground">Checkout</CardTitle>
                 <CardDescription>Complete your subscription to unlock full access.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form id="checkout-form" onSubmit={handleCheckout} className="space-y-6">
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-slate-900">Account Information</h3>
+                    <h3 className="text-lg font-medium text-foreground">Account Information</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstName">First Name</Label>
@@ -103,28 +103,28 @@ export default function Checkout() {
                     <div className="space-y-2">
                       <Label htmlFor="email">Email Address</Label>
                       <Input id="email" type="email" defaultValue={profile?.email || ''} disabled />
-                      <p className="text-xs text-slate-500">Your receipt will be sent to this email.</p>
+                      <p className="text-xs text-muted-foreground">Your receipt will be sent to this email.</p>
                     </div>
                   </div>
 
                   <Separator />
 
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-slate-900 flex items-center justify-between">
+                    <h3 className="text-lg font-medium text-foreground flex items-center justify-between">
                       Payment Details
                       <div className="flex space-x-2">
-                        <CreditCard className="h-5 w-5 text-slate-400" />
+                        <CreditCard className="h-5 w-5 text-muted-foreground" />
                       </div>
                     </h3>
                     <div className="space-y-2">
                       <Label htmlFor="cardName">Name on Card</Label>
-                      <Input id="cardName" placeholder="John Doe" required />
+                      <Input id="cardName" placeholder="Dr. Jane Doe" required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="cardNumber">Card Number</Label>
                       <div className="relative">
                         <Input id="cardNumber" placeholder="0000 0000 0000 0000" required />
-                        <Lock className="absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <Lock className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -140,17 +140,17 @@ export default function Checkout() {
                   </div>
                 </form>
               </CardContent>
-              <CardFooter className="bg-slate-50 border-t border-slate-100 p-6 flex flex-col items-start">
+              <CardFooter className="bg-muted/40 border-t border-border p-6 flex flex-col items-start">
                 <Button 
                   type="submit" 
                   form="checkout-form"
-                  className="w-full bg-blue-700 hover:bg-blue-800 text-white text-lg h-12"
+                  className="w-full text-base h-11"
                   disabled={isProcessing}
                 >
                   {isProcessing ? 'Processing Payment...' : `Pay ${selectedPlan.price}`}
                 </Button>
-                <div className="mt-4 flex items-center text-sm text-slate-500 w-full justify-center">
-                  <ShieldCheck className="h-4 w-4 mr-1 text-green-600" />
+                <div className="mt-4 flex items-center text-xs text-muted-foreground w-full justify-center">
+                  <ShieldCheck className="h-4 w-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
                   Payments are secure and encrypted.
                 </div>
               </CardFooter>
@@ -159,41 +159,41 @@ export default function Checkout() {
 
           {/* Order Summary */}
           <div className="md:col-span-1">
-            <Card className="border-slate-200 shadow-sm sticky top-24">
-              <CardHeader className="bg-slate-50 border-b border-slate-100">
-                <CardTitle className="text-lg text-slate-900">Order Summary</CardTitle>
+            <Card className="border-border bg-card shadow-sm sticky top-24">
+              <CardHeader className="bg-muted/40 border-b border-border">
+                <CardTitle className="font-editorial text-lg text-foreground">Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium text-slate-900">{selectedPlan.name} Subscription</p>
-                      <p className="text-sm text-slate-500">Billed annually</p>
+                      <p className="font-medium text-foreground">{selectedPlan.name} Subscription</p>
+                      <p className="text-sm text-muted-foreground">Billed annually</p>
                     </div>
-                    <p className="font-medium text-slate-900">{selectedPlan.price}</p>
+                    <p className="font-medium text-foreground tabular-nums">{selectedPlan.price}</p>
                   </div>
                   
                   <Separator />
                   
-                  <div className="flex justify-between items-center font-bold text-lg text-slate-900">
+                  <div className="flex justify-between items-center font-bold text-lg text-foreground">
                     <p>Total</p>
-                    <p>{selectedPlan.price}</p>
+                    <p className="tabular-nums">{selectedPlan.price}</p>
                   </div>
                 </div>
 
                 <div className="mt-8 space-y-3">
-                  <h4 className="text-sm font-medium text-slate-900">What's included:</h4>
-                  <ul className="space-y-2 text-sm text-slate-600">
+                  <h4 className="text-sm font-medium text-foreground">What's included:</h4>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mr-2 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mr-2 shrink-0 mt-0.5" />
                       Full text access to all articles
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mr-2 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mr-2 shrink-0 mt-0.5" />
                       Unlimited PDF downloads
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mr-2 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mr-2 shrink-0 mt-0.5" />
                       Access to complete journal archive
                     </li>
                   </ul>

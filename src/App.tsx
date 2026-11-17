@@ -10,6 +10,7 @@ import AuthorsList from './pages/AuthorsList';
 import Submit from './pages/Submit';
 import Dashboard from './pages/Dashboard';
 import EditorialBoard from './pages/EditorialBoard';
+import EditorialPolicy from './pages/EditorialPolicy';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Archive from './pages/Archive';
@@ -19,7 +20,12 @@ import Checkout from './pages/Checkout';
 import AuthorProfile from './pages/AuthorProfile';
 import Profile from './pages/Profile';
 import Metrics from './pages/Metrics';
+import Events from './pages/Events';
+import EventDetail from './pages/EventDetail';
 import { Toaster } from '@/components/ui/sonner';
+
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 export default function App() {
   return (
@@ -42,9 +48,14 @@ export default function App() {
               <Route path="checkout/:plan" element={<Checkout />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="editorial-board" element={<EditorialBoard />} />
+              <Route path="editorial-policy" element={<EditorialPolicy />} />
               <Route path="about" element={<About />} />
               <Route path="contact" element={<Contact />} />
               <Route path="metrics" element={<Metrics />} />
+              <Route path="events" element={<Events />} />
+              <Route path="events/:id" element={<EventDetail />} />
+              <Route path="privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="terms-of-service" element={<TermsOfService />} />
             </Route>
           </Routes>
           <Toaster position="top-right" />

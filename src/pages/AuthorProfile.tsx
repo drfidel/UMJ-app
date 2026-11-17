@@ -5,7 +5,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User, BookOpen, Building, GraduationCap, ArrowLeft } from 'lucide-react';
+import { User, BookOpen, Building, GraduationCap, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function AuthorProfile() {
@@ -18,9 +18,9 @@ export default function AuthorProfile() {
   const { isDemoMode } = useAuth();
 
   const dummyProfiles: Record<string, any> = {
-    'Dr. Jane Namukasa': { affiliation: 'Makerere University, College of Health Sciences', specialties: ['Epidemiology', 'Maternal Health'] },
-    'Dr. Peter Okello': { affiliation: 'Uganda Ministry of Health', specialties: ['Public Health', 'Infectious Diseases'] },
-    'Dr. Sarah Kizza': { affiliation: 'Mulago National Referral Hospital', specialties: ['Pediatrics', 'HIV/AIDS'] },
+    'Dr. Jane Namukasa': { affiliation: 'Makerere University, College of Health Sciences', specialties: ['Epidemiology', 'Maternal Health'], isVerifiedReviewer: true, completedReviews: 14 },
+    'Dr. Peter Okello': { affiliation: 'Uganda Ministry of Health', specialties: ['Public Health', 'Infectious Diseases'], isVerifiedReviewer: false },
+    'Dr. Sarah Kizza': { affiliation: 'Mulago National Referral Hospital', specialties: ['Pediatrics', 'HIV/AIDS'], isVerifiedReviewer: true, completedReviews: 8 },
     'Prof. Emmanuel Mukiibi': { affiliation: 'Makerere University', specialties: ['Infectious Diseases', 'Virology'] },
     'Dr. Moses Byaruhanga': { affiliation: 'Mbarara University of Science and Technology', specialties: ['Traditional Medicine', 'Public Health'] },
     'Dr. Florence Akello': { affiliation: 'Mbale Regional Referral Hospital', specialties: ['Obstetrics', 'Gynecology'] },
@@ -161,16 +161,16 @@ export default function AuthorProfile() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
+      <div className="flex justify-center py-20 bg-background min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-50 min-h-screen py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link to="/articles" className="inline-flex items-center text-sm text-blue-700 hover:text-blue-800 mb-8 font-medium">
+    <div className="bg-background min-h-screen py-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Link to="/articles" className="inline-flex items-center text-sm text-primary hover:underline mb-8 font-medium">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Articles
         </Link>
@@ -178,40 +178,48 @@ export default function AuthorProfile() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Author Profile Sidebar */}
           <div className="md:col-span-1">
-            <Card className="border-slate-200 shadow-sm sticky top-8">
+            <Card className="border-border bg-card shadow-sm sticky top-24">
               <CardContent className="pt-8 text-center">
-                <div className="mx-auto w-24 h-24 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center mb-4">
-                  <User className="h-12 w-12" />
+                <div className="mx-auto w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 font-editorial text-2xl font-bold border border-primary/20">
+                  {decodedName
+                    .replace(/^(Dr\.|Prof\.|Mr\.|Ms\.)\s+/i, '')
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map((n) => n[0])
+                    .join('') || <User className="h-9 w-9" />}
                 </div>
-                <h1 className="text-2xl font-bold text-slate-900 mb-2">{decodedName}</h1>
+                <h1 className="font-editorial text-2xl font-bold text-foreground mb-2">{decodedName}</h1>
+                
+                {authorProfile?.isVerifiedReviewer && (
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-4">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>Verified Reviewer · {authorProfile.completedReviews} Reviews</span>
+                  </div>
+                )}
                 
                 {authorProfile?.affiliation && (
-                  <div className="flex items-center justify-center text-slate-600 mb-2">
-                    <Building className="h-4 w-4 mr-2" />
-                    <span className="text-sm">{authorProfile.affiliation}</span>
+                  <div className="flex items-start justify-center text-muted-foreground mb-2 gap-2 text-sm">
+                    <Building className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{authorProfile.affiliation}</span>
                   </div>
                 )}
                 
                 {authorProfile?.specialties && authorProfile.specialties.length > 0 && (
-                  <div className="mt-6 text-left">
-                    <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center">
-                      <GraduationCap className="h-4 w-4 mr-2" />
-                      Specialties
+                  <div className="mt-6 text-left border-t border-border pt-5">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5 flex items-center">
+                      <GraduationCap className="h-3.5 w-3.5 mr-2" />
+                      Clinical Specialties
                     </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {authorProfile.specialties.map((specialty: string, index: number) => (
-                        <Badge key={index} variant="secondary" className="bg-slate-100 text-slate-700">
-                          {specialty}
-                        </Badge>
-                      ))}
-                    </div>
+                    <p className="text-sm text-foreground">
+                      {authorProfile.specialties.join(' · ')}
+                    </p>
                   </div>
                 )}
                 
-                <div className="mt-6 pt-6 border-t border-slate-100 flex justify-around text-center">
+                <div className="mt-6 pt-5 border-t border-border flex justify-around text-center">
                   <div>
-                    <div className="text-2xl font-bold text-blue-700">{articles.length}</div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wider font-medium">Articles</div>
+                    <div className="text-2xl font-bold text-primary font-mono tabular-nums">{articles.length}</div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Publications</div>
                   </div>
                 </div>
               </CardContent>
@@ -220,50 +228,47 @@ export default function AuthorProfile() {
 
           {/* Author's Articles List */}
           <div className="md:col-span-2 space-y-6">
-            <h2 className="text-2xl font-bold text-slate-900 flex items-center">
-              <BookOpen className="h-6 w-6 mr-3 text-blue-700" />
+            <h2 className="font-editorial text-2xl font-bold text-foreground flex items-center pb-3 border-b border-border">
+              <BookOpen className="h-5 w-5 mr-3 text-primary" />
               Published Articles
             </h2>
             
             {articles.length > 0 ? (
-              articles.map((article) => (
-                <Card key={article.id} className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mb-3">
-                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 font-medium rounded-sm">
-                        Research Article
-                      </Badge>
-                      <span>•</span>
-                      <span>Published: {format(new Date(article.publishedAt), 'MMM d, yyyy')}</span>
+              <div className="bg-card border border-border rounded-lg divide-y divide-border">
+                {articles.map((article) => (
+                  <article key={article.id} className="p-6 hover:bg-muted/25 transition-colors">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2">
+                      <span className="font-semibold text-primary">Research Article</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="tabular-nums">{format(new Date(article.publishedAt), 'MMM d, yyyy')}</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="font-mono tabular-nums">Vol {article.volume}, Issue {article.issue}</span>
                     </div>
                     
-                    <h3 className="text-xl font-bold text-slate-900 mb-2 leading-tight">
-                      <Link to={`/article/${article.id}`} className="hover:text-blue-700 transition-colors">
+                    <h3 className="font-editorial text-xl font-bold text-foreground mb-2 leading-snug">
+                      <Link to={`/articles/${article.id}`} className="hover:text-primary transition-colors">
                         {article.title}
                       </Link>
                     </h3>
                     
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
                       {article.abstract}
                     </p>
                     
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                      <div className="text-sm text-slate-500">
-                        Vol {article.volume}, Issue {article.issue}
-                      </div>
-                      <Link to={`/article/${article.id}`} className="text-sm font-medium text-blue-700 hover:text-blue-800 flex items-center">
-                        Read Article
+                    <div className="flex items-center justify-between pt-3 border-t border-border/60">
+                      <Link to={`/articles/${article.id}`} className="text-sm font-medium text-primary hover:underline">
+                        Read Full Article →
                       </Link>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
+                  </article>
+                ))}
+              </div>
             ) : (
-              <Card className="border-slate-200 shadow-sm bg-slate-50">
+              <Card className="border-border bg-card shadow-sm">
                 <CardContent className="p-12 text-center">
-                  <BookOpen className="mx-auto h-12 w-12 text-slate-300 mb-4" />
-                  <h3 className="text-lg font-medium text-slate-900 mb-1">No Articles Found</h3>
-                  <p className="text-slate-500">
+                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground/40 mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-1">No Articles Found</h3>
+                  <p className="text-muted-foreground">
                     We couldn't find any published articles for this author.
                   </p>
                 </CardContent>

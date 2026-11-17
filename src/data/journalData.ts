@@ -1,0 +1,380 @@
+export interface JournalArticle {
+  id: string;
+  title: string;
+  abstract: string;
+  authors: string[];
+  affiliations?: string[];
+  keywords: string[];
+  volume: number;
+  issue: number;
+  publishedAt: string;
+  receivedAt?: string;
+  acceptedAt?: string;
+  doi?: string;
+  pdfUrl?: string;
+  views?: number;
+  downloads?: number;
+  citations?: number;
+  isOpenAccess?: boolean;
+  specialty?: string;
+  articleType?: 'Original Investigation' | 'Cohort Study' | 'Randomized Trial' | 'Clinical Review' | 'Surveillance Report' | 'Policy Analysis';
+  readTime?: string;
+  keyPoints?: {
+    question: string;
+    findings: string;
+    meaning: string;
+  };
+  funding?: string;
+  ethicsApproval?: string;
+}
+
+export const MEDICAL_SPECIALTIES = [
+  'General Medicine',
+  'Internal Medicine',
+  'Surgery',
+  'Pediatrics',
+  'Obstetrics & Gynecology',
+  'Public Health',
+  'Infectious Diseases',
+  'Tropical Medicine',
+  'Cardiology',
+  'Neurology',
+  'Oncology',
+  'Psychiatry',
+  'Dermatology',
+  'Family Medicine',
+  'Other',
+];
+
+export const CURATED_ARTICLES: JournalArticle[] = [
+  {
+    id: '1',
+    title: 'Prevalence and Risk Factors of Malaria in Pregnant Women in Rural Uganda',
+    authors: ['Dr. Jane Namukasa', 'Dr. Peter Okello', 'Prof. Samuel Lwanga'],
+    affiliations: [
+      'Department of Obstetrics & Gynecology, Mbarara University of Science and Technology',
+      'Department of Epidemiology, Gulu University Faculty of Medicine',
+      'Makerere University College of Health Sciences, Kampala',
+    ],
+    abstract:
+      'Background: Malaria during pregnancy remains a major public health challenge in sub-Saharan Africa. This study investigates the current prevalence rates and associated risk factors for malaria infection among pregnant women attending antenatal care in rural health centers across Uganda.\n\nMethods: A cross-sectional study was conducted involving 850 pregnant women across 12 rural health centers. Blood samples were tested using rapid diagnostic tests (RDTs) and microscopy. Demographic and behavioral data were collected via structured questionnaires.\n\nResults: The overall prevalence of malaria was 24.5%. Factors significantly associated with infection included non-use of insecticide-treated nets (ITNs) (aOR 3.2, 95% CI 2.1-4.8), primigravida status (aOR 2.1, 95% CI 1.5-3.0), and living in proximity to stagnant water bodies. Only 45% of participants reported receiving intermittent preventive treatment (IPTp) according to national guidelines.\n\nConclusion: The prevalence of malaria among pregnant women in rural Uganda remains unacceptably high. There is an urgent need to intensify the distribution and promote the utilization of ITNs, alongside improving the coverage of IPTp services in rural antenatal care settings.',
+    keywords: ['Malaria', 'Maternal Health', 'Epidemiology', 'Uganda', 'Pregnancy'],
+    volume: 45,
+    issue: 3,
+    publishedAt: new Date('2023-10-15').toISOString(),
+    receivedAt: '2023-06-12',
+    acceptedAt: '2023-09-18',
+    doi: '10.1234/umaj.2023.45.3.01',
+    views: 1245,
+    downloads: 510,
+    citations: 18,
+    isOpenAccess: false,
+    specialty: 'Infectious Diseases',
+    articleType: 'Original Investigation',
+    readTime: '8 min read',
+    keyPoints: {
+      question: 'What is the current prevalence and primary behavioral risk profile of malaria among pregnant women attending rural antenatal clinics in Uganda?',
+      findings: 'In this multi-site cross-sectional study of 850 women, malaria prevalence was 24.5%, strongly driven by non-use of insecticide-treated nets (aOR 3.2) and suboptimal IPTp uptake (45%).',
+      meaning: 'Strengthening community-level ITN distribution and point-of-care IPTp adherence during first antenatal visits is essential to reduce maternal and neonatal morbidity.',
+    },
+    funding: 'Supported by the Uganda National Council for Science and Technology (UNCST) Clinical Research Grant #2023-14.',
+    ethicsApproval: 'Approved by the Makerere University School of Medicine Research and Ethics Committee (SOMREC #2023-084).',
+  },
+  {
+    id: '2',
+    title: 'Outcomes of Antiretroviral Therapy in Pediatric HIV Patients: A 5-Year Retrospective Cohort',
+    authors: ['Dr. Sarah Kizza', 'Prof. Emmanuel Mukiibi'],
+    affiliations: [
+      'Department of Paediatrics and Child Health, Mulago National Referral Hospital',
+      'Department of Internal Medicine, Makerere University College of Health Sciences',
+    ],
+    abstract:
+      'Background: Long-term viral suppression and retention in care remain critical benchmarks in pediatric HIV management across East Africa.\n\nMethods: We analyzed a 5-year retrospective cohort of 640 children and adolescents aged 1 to 17 years initiated on dolutegravir-based and legacy antiretroviral therapy regimens at Mulago National Referral Hospital.\n\nResults: Overall 60-month retention in care was 88.4%, with sustained viral load suppression (<1,000 copies/mL) achieved in 81.2% of patients. Transition into adolescence (ages 13-17) was independently associated with treatment interruption (aHR 1.92, 95% CI 1.34-2.75).\n\nConclusion: While pediatric ART outcomes have improved markedly with optimized regimens, structured adolescent-friendly transition clinics and peer adherence counseling are urgently required to preserve viral suppression.',
+    keywords: ['HIV/AIDS', 'Pediatrics', 'Infectious Diseases'],
+    volume: 45,
+    issue: 3,
+    publishedAt: new Date('2023-11-02').toISOString(),
+    receivedAt: '2023-07-04',
+    acceptedAt: '2023-10-08',
+    doi: '10.1234/umaj.2023.45.3.02',
+    views: 980,
+    downloads: 420,
+    citations: 14,
+    isOpenAccess: true,
+    specialty: 'Pediatrics',
+    articleType: 'Cohort Study',
+    readTime: '7 min read',
+    keyPoints: {
+      question: 'What are the 5-year viral suppression and retention outcomes among pediatric patients receiving ART at a national referral center?',
+      findings: 'Of 640 children followed over 5 years, 88.4% remained in care and 81.2% achieved durable viral suppression; adolescent transition doubled the hazard of interruption.',
+      meaning: 'Dedicated adolescent transition support models should be integrated into national pediatric HIV care protocols.',
+    },
+    funding: 'Ministry of Health Pediatric HIV Operational Research Initiative.',
+    ethicsApproval: 'Approved by Mulago Hospital Research & Ethics Committee (MHREC #2022-419).',
+  },
+  {
+    id: '3',
+    title: 'Integration of Traditional Medicine with Modern Healthcare in Managing Non-Communicable Diseases',
+    authors: ['Dr. Moses Byaruhanga'],
+    affiliations: ['Health Systems Research Unit, Uganda Medical Association, Kampala'],
+    abstract:
+      'Background: Dual utilization of traditional herbal remedies and conventional pharmaceuticals is widespread among patients living with hypertension and type 2 diabetes in Uganda.\n\nMethods: A mixed-methods policy analysis and clinical survey of 410 outpatients and 32 traditional health practitioners across Central and Western Uganda evaluated disclosure rates, herb-drug interactions, and collaborative referral pathways.\n\nResults: Nearly 62% of patients reported concurrent use of herbal preparations alongside prescribed antihypertensives or oral hypoglycemics, yet only 18% disclosed this use to their attending physician.\n\nConclusion: Formalized clinical communication guidelines and pharmacovigilance registries can bridge traditional and biomedical practice safely without alienating community health beliefs.',
+    keywords: ['Public Health', 'Non-Communicable Diseases'],
+    volume: 45,
+    issue: 2,
+    publishedAt: new Date('2023-08-10').toISOString(),
+    receivedAt: '2023-04-02',
+    acceptedAt: '2023-07-11',
+    doi: '10.1234/umaj.2023.45.2.04',
+    views: 1840,
+    downloads: 760,
+    citations: 29,
+    isOpenAccess: true,
+    specialty: 'Public Health',
+    articleType: 'Policy Analysis',
+    readTime: '6 min read',
+    keyPoints: {
+      question: 'How prevalent is undisclosed concurrent herbal therapy use among Ugandan adults managed for hypertension and diabetes?',
+      findings: '62% of surveyed NCD outpatients used traditional remedies concurrently with biomedical therapy, while 82% did not disclose this to clinicians.',
+      meaning: 'Non-judgmental clinical history-taking and integrated referral frameworks are needed to prevent adverse herb-drug interactions.',
+    },
+  },
+  {
+    id: '4',
+    title: 'Maternal Mortality Trends in Eastern Uganda: 2015-2022',
+    authors: ['Dr. Florence Akello', 'Dr. David Otim'],
+    affiliations: [
+      'Mbale Regional Referral Hospital, Department of Obstetrics & Gynecology',
+      'Busitema University Faculty of Health Sciences',
+    ],
+    abstract:
+      'Background: Tracking regional maternal mortality ratios (MMR) provides critical feedback on emergency obstetric care investments.\n\nMethods: An 8-year audit of maternal death surveillance and response (MDSR) records across four district hospitals in Eastern Uganda.\n\nResults: Institutional MMR declined from 412 to 286 per 100,000 live births between 2015 and 2022. Postpartum hemorrhage (38%) and hypertensive disorders of pregnancy (24%) remained the leading direct causes of mortality.\n\nConclusion: Sustained gains in facility-based delivery must now be paired with reliable blood transfusion banking and magnesium sulfate availability at Health Centre IV facilities.',
+    keywords: ['Maternal Health', 'Public Health', 'Obstetrics'],
+    volume: 44,
+    issue: 4,
+    publishedAt: new Date('2022-12-05').toISOString(),
+    doi: '10.1234/umaj.2022.44.4.03',
+    views: 740,
+    downloads: 290,
+    citations: 11,
+    isOpenAccess: false,
+    specialty: 'Obstetrics & Gynecology',
+    articleType: 'Surveillance Report',
+    readTime: '9 min read',
+  },
+  {
+    id: '5',
+    title: 'Evaluating Telemedicine Efficacy for Post-Operative Follow-Up in General Surgery',
+    authors: ['Dr. David Otim', 'Dr. Rachel Nabatte'],
+    affiliations: ['Department of Surgery, Mulago National Referral Hospital'],
+    abstract:
+      'Background: Travel distances and out-of-pocket costs frequently delay post-operative surgical reviews in rural districts.\n\nMethods: A prospective non-inferiority study comparing structured tele-consultation follow-up (n=210) against standard outpatient clinic review (n=210) following clean elective general surgical procedures.\n\nResults: Surgical site infection detection sensitivity was 94.1% via structured photo-triage, with a 68% reduction in patient travel expenditure and 91% patient satisfaction.\n\nConclusion: Structured telemedicine follow-up is safe, cost-effective, and feasible for uncomplicated post-operative surgical care.',
+    keywords: ['Telemedicine', 'Surgery', 'Patient Outcomes'],
+    volume: 45,
+    issue: 1,
+    publishedAt: new Date('2023-02-14').toISOString(),
+    doi: '10.1234/umaj.2023.45.1.02',
+    views: 690,
+    downloads: 310,
+    citations: 9,
+    isOpenAccess: true,
+    specialty: 'Surgery',
+    articleType: 'Original Investigation',
+    readTime: '6 min read',
+  },
+  {
+    id: '6',
+    title: 'Nutritional Interventions in Severe Acute Malnutrition: A Comparative Trial',
+    authors: ['Dr. Sarah Kizza', 'Dr. Grace Lwanga'],
+    affiliations: ['Mwanamugimu Nutrition Unit, Mulago Hospital'],
+    abstract:
+      'Background: Locally sourced ready-to-use therapeutic foods (RUTF) offer supply-chain resilience for community-based management of acute malnutrition.\n\nMethods: A randomized controlled trial comparing recovery rates among 320 children aged 6-59 months treated with locally formulated soy-maize-sorghum RUTF versus standard imported peanut-based RUTF.\n\nResults: Nutritional recovery rates at 8 weeks were comparable (84.4% vs 86.1%, p=0.67), with lower unit procurement cost for the locally produced formulation.\n\nConclusion: Locally formulated RUTF demonstrates non-inferior clinical recovery and supports sustainable national nutrition supply chains.',
+    keywords: ['Nutrition', 'Pediatrics', 'Malnutrition'],
+    volume: 44,
+    issue: 4,
+    publishedAt: new Date('2022-11-20').toISOString(),
+    doi: '10.1234/umaj.2022.44.4.07',
+    views: 810,
+    downloads: 345,
+    citations: 16,
+    isOpenAccess: true,
+    specialty: 'Pediatrics',
+    articleType: 'Randomized Trial',
+    readTime: '8 min read',
+  },
+  {
+    id: '7',
+    title: 'Antibiotic Resistance Patterns in Urinary Tract Infections: A Multi-Center Surveillance',
+    authors: ['Dr. Moses Byaruhanga', 'Dr. Peter Okello'],
+    abstract:
+      'Surveillance data across three regional referral hospitals indicating a concerning rise in multi-drug resistant E. coli and Klebsiella strains among community-acquired UTIs, necessitating updated empirical guidelines.',
+    keywords: ['Antibiotic Resistance', 'Microbiology', 'UTI'],
+    volume: 46,
+    issue: 1,
+    publishedAt: new Date('2024-01-10').toISOString(),
+    doi: '10.1234/umaj.2024.46.1.01',
+    views: 1120,
+    downloads: 480,
+    citations: 12,
+    isOpenAccess: false,
+    specialty: 'Infectious Diseases',
+    articleType: 'Surveillance Report',
+    readTime: '7 min read',
+  },
+  {
+    id: '8',
+    title: 'Screening for Cervical Cancer using HPV DNA Testing vs VIA in Low-Resource Settings',
+    authors: ['Dr. Florence Akello', 'Prof. Emmanuel Mukiibi'],
+    abstract:
+      'Comparing the sensitivity, specificity, and logistical feasibility of primary HPV DNA screening to Visual Inspection with Acetic Acid (VIA) across mobile health camps in Northern Uganda.',
+    keywords: ['Cervical Cancer', 'Oncology', 'Screening'],
+    volume: 46,
+    issue: 1,
+    publishedAt: new Date('2024-02-05').toISOString(),
+    doi: '10.1234/umaj.2024.46.1.04',
+    views: 920,
+    downloads: 390,
+    citations: 8,
+    isOpenAccess: false,
+    specialty: 'Oncology',
+    articleType: 'Original Investigation',
+    readTime: '8 min read',
+  },
+  {
+    id: '9',
+    title: 'Impact of the COVID-19 Pandemic on Routine Immunization Coverage',
+    authors: ['Dr. Jane Namukasa'],
+    abstract:
+      'An evaluation of disruptions to scheduling and delivery of early childhood vaccinations during lockdown periods and the subsequent catch-up strategies implemented by the Ministry of Health.',
+    keywords: ['COVID-19', 'Immunization', 'Public Health'],
+    volume: 44,
+    issue: 3,
+    publishedAt: new Date('2022-09-18').toISOString(),
+    doi: '10.1234/umaj.2022.44.3.05',
+    views: 640,
+    downloads: 210,
+    citations: 7,
+    isOpenAccess: true,
+    specialty: 'Public Health',
+    articleType: 'Cohort Study',
+    readTime: '6 min read',
+  },
+  {
+    id: '10',
+    title: 'Epidemiology of Traumatic Brain Injuries at Mulago Casualty Ward',
+    authors: ['Dr. David Otim', 'Dr. Simon Kigozi'],
+    abstract:
+      'Profiling the demographics, causes (specifically motorcycle road traffic injuries), injury severity scores, and 30-day outcomes of patients presenting with TBI over a sequential 6-month window.',
+    keywords: ['Trauma', 'Surgery', 'Neurology', 'Road Safety'],
+    volume: 45,
+    issue: 2,
+    publishedAt: new Date('2023-05-22').toISOString(),
+    doi: '10.1234/umaj.2023.45.2.09',
+    views: 870,
+    downloads: 340,
+    citations: 10,
+    isOpenAccess: false,
+    specialty: 'Surgery',
+    articleType: 'Cohort Study',
+    readTime: '7 min read',
+  },
+  {
+    id: '11',
+    title: 'Gestational Diabetes Mellitus: Screening Practices and Perinatal Outcomes',
+    authors: ['Dr. Rachel Nabatte', 'Dr. Florence Akello'],
+    abstract:
+      'Reviewing current screening protocols for GDM in urban vs. rural settings, and correlating maternal glycemic control with instances of macrosomia and neonatal hypoglycemia.',
+    keywords: ['Gestational Diabetes', 'Obstetrics', 'Endocrinology'],
+    volume: 45,
+    issue: 4,
+    publishedAt: new Date('2023-12-08').toISOString(),
+    doi: '10.1234/umaj.2023.45.4.02',
+    views: 710,
+    downloads: 280,
+    citations: 6,
+    isOpenAccess: true,
+    specialty: 'Obstetrics & Gynecology',
+    articleType: 'Clinical Review',
+    readTime: '9 min read',
+  },
+  {
+    id: '12',
+    title: 'Efficacy of Mass Drug Administration for Neglected Tropical Diseases: A Schistosomiasis Focus',
+    authors: ['Dr. Peter Okello', 'Prof. Emmanuel Mukiibi'],
+    abstract:
+      'Evaluating the long-term impact of annual Praziquantel distribution on infection intensity and morbidity markers among school-aged children in endemic communities around Lake Victoria.',
+    keywords: ['Schistosomiasis', 'NTDs', 'Tropical Medicine'],
+    volume: 46,
+    issue: 2,
+    publishedAt: new Date('2024-04-12').toISOString(),
+    doi: '10.1234/umaj.2024.46.2.01',
+    views: 950,
+    downloads: 410,
+    citations: 13,
+    isOpenAccess: true,
+    specialty: 'Tropical Medicine',
+    articleType: 'Original Investigation',
+    readTime: '7 min read',
+  },
+  {
+    id: '13',
+    title: 'Mental Health Correlates Among Frontline Healthcare Workers Post-Pandemic',
+    authors: ['Dr. Grace Lwanga', 'Dr. Moses Byaruhanga'],
+    abstract:
+      'A cross-sectional survey assessing the prevalence of burnout, depression, and PTSD symptoms among nurses and doctors treating infectious diseases, emphasizing the need for psychosocial support programs.',
+    keywords: ['Mental Health', 'Psychiatry', 'Occupational Health'],
+    volume: 45,
+    issue: 4,
+    publishedAt: new Date('2023-11-28').toISOString(),
+    doi: '10.1234/umaj.2023.45.4.08',
+    views: 1030,
+    downloads: 440,
+    citations: 15,
+    isOpenAccess: false,
+    specialty: 'Psychiatry',
+    articleType: 'Original Investigation',
+    readTime: '6 min read',
+  },
+  {
+    id: '14',
+    title: 'Management of Sickle Cell Crisis using Hydroxyurea in Resource-Limited Facilities',
+    authors: ['Dr. Sarah Kizza'],
+    abstract:
+      'Analyzing the clinical effectiveness and safety profile of escalating Hydroxyurea doses to manage painful vaso-occlusive crises in pediatric patients attending regional clinics.',
+    keywords: ['Sickle Cell Disease', 'Pediatrics', 'Hematology'],
+    volume: 46,
+    issue: 2,
+    publishedAt: new Date('2024-03-15').toISOString(),
+    doi: '10.1234/umaj.2024.46.2.05',
+    views: 1310,
+    downloads: 590,
+    citations: 19,
+    isOpenAccess: true,
+    specialty: 'Internal Medicine',
+    articleType: 'Clinical Review',
+    readTime: '8 min read',
+  },
+  {
+    id: '15',
+    title: 'Cardiovascular Risk Stratification in Newly Diagnosed Type 2 Diabetes Patients',
+    authors: ['Dr. Simon Kigozi', 'Dr. Jane Namukasa'],
+    abstract:
+      'A baseline clinical audit correlating lipid profiles, blood pressure indices, and lifestyle factors with 10-year projected cardiovascular risk scores among incident T2DM cohorts.',
+    keywords: ['Cardiology', 'Diabetes', 'Internal Medicine'],
+    volume: 45,
+    issue: 1,
+    publishedAt: new Date('2023-03-30').toISOString(),
+    doi: '10.1234/umaj.2023.45.1.06',
+    views: 680,
+    downloads: 250,
+    citations: 5,
+    isOpenAccess: false,
+    specialty: 'Cardiology',
+    articleType: 'Cohort Study',
+    readTime: '7 min read',
+  },
+];
+
+export const CURATED_ARTICLE_MAP: Record<string, JournalArticle> = Object.fromEntries(
+  CURATED_ARTICLES.map((a) => [a.id, a])
+);

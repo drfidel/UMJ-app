@@ -14,8 +14,12 @@ export interface UserProfile {
   role: UserRole;
   affiliation?: string;
   specialties?: string[];
+  orcid?: string;
   createdAt: string;
   bookmarkedArticles?: string[];
+  registeredEvents?: string[];
+  isUnavailable?: boolean;
+  unavailableDate?: string;
 }
 
 interface AuthContextType {

@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import ogShareImg from '@/assets/images/og_journal_share_1794934078504.jpg';
 
 interface SEOProps {
   title?: string;
@@ -9,30 +10,27 @@ interface SEOProps {
   image?: string;
 }
 
-export default function SEO({ 
-  title = 'Uganda Medical Journal - UMA', 
+export default function SEO({
+  title = 'Uganda Medical Journal',
   description = 'The Uganda Medical Journal is a peer-reviewed open access journal published by the Uganda Medical Association.',
   type = 'website',
   name = 'Uganda Medical Journal',
   url = 'https://www.uma.ug',
-  image = 'https://images.unsplash.com/photo-1576091160550-2173ff9e5eb4?auto=format&fit=crop&q=80&w=1200&h=630'
+  image = ogShareImg,
 }: SEOProps) {
   const fullTitle = title !== name ? `${title} | ${name}` : title;
 
   return (
     <Helmet>
-      {/* Standard metadata tags */}
       <title>{fullTitle}</title>
-      <meta name='description' content={description} />
-      
-      {/* Facebook tags */}
+      <meta name="description" content={description} />
+
       <meta property="og:type" content={type} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />
       {image && <meta property="og:image" content={image} />}
 
-      {/* Twitter tags */}
       <meta name="twitter:creator" content={name} />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />

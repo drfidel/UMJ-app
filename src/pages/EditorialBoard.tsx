@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
+import SEO from '@/components/SEO';
+import { buttonVariants } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 export default function EditorialBoard() {
   const leadership = [
@@ -8,109 +9,149 @@ export default function EditorialBoard() {
       name: 'Prof. Emmanuel Mukiibi',
       role: 'Editor-in-Chief',
       affiliation: 'Makerere University College of Health Sciences',
-      specialty: 'Internal Medicine',
-      image: 'https://i.pravatar.cc/150?u=emmanuel',
-    }
-  ];
-
-  const editorialStaff = [
+      specialty: 'Internal Medicine & Clinical Epidemiology',
+      initials: 'EM',
+      bio: 'Professor of Medicine with over 25 years of clinical research leadership in infectious diseases and cardiometabolic health across East Africa.',
+    },
     {
       name: 'Dr. Sarah Kizza',
       role: 'Deputy Editor',
       affiliation: 'Mulago National Referral Hospital',
       specialty: 'Pediatrics & Child Health',
-      image: 'https://i.pravatar.cc/150?u=sarah',
+      initials: 'SK',
+      bio: 'Senior Consultant Pediatrician leading multi-center cohort investigations on pediatric HIV retention and childhood nutrition.',
     },
+  ];
+
+  const editorialStaff = [
     {
       name: 'Dr. Peter Okello',
       role: 'Associate Editor',
       affiliation: 'Gulu University Faculty of Medicine',
       specialty: 'Public Health & Epidemiology',
-      image: 'https://i.pravatar.cc/150?u=peter',
+      initials: 'PO',
     },
     {
       name: 'Prof. Jane Namukasa',
       role: 'Associate Editor',
       affiliation: 'Mbarara University of Science and Technology',
       specialty: 'Obstetrics & Gynecology',
-      image: 'https://i.pravatar.cc/150?u=jane',
+      initials: 'JN',
     },
     {
       name: 'Dr. Moses Byaruhanga',
       role: 'Managing Editor',
       affiliation: 'Uganda Medical Association',
       specialty: 'Health Systems Management',
-      image: 'https://i.pravatar.cc/150?u=moses',
-    }
+      initials: 'MB',
+    },
+    {
+      name: 'Dr. Brian Mugunga',
+      role: 'Statistical & Ethics Editor',
+      affiliation: 'Makerere University School of Public Health',
+      specialty: 'Biostatistics & Research Ethics',
+      initials: 'BM',
+    },
+    {
+      name: 'Dr. Florence Akello',
+      role: 'Associate Editor',
+      affiliation: 'Mbale Regional Referral Hospital',
+      specialty: 'Maternal & Perinatal Health',
+      initials: 'FA',
+    },
+    {
+      name: 'Dr. David Otim',
+      role: 'Associate Editor',
+      affiliation: 'Busitema University Faculty of Health Sciences',
+      specialty: 'General Surgery & Trauma',
+      initials: 'DO',
+    },
   ];
 
   return (
-    <div className="bg-slate-50 min-h-screen py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">Editorial Board</h1>
-          <p className="text-lg text-slate-600">
-            The Uganda Medical Association Journal is guided by a distinguished board of medical professionals and researchers dedicated to advancing healthcare in Uganda and globally.
-          </p>
+    <div className="bg-background min-h-screen py-12">
+      <SEO
+        title="Editorial Board"
+        description="Meet the distinguished editors and medical researchers guiding the Uganda Medical Journal."
+      />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="border-b border-border pb-6 mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Governance & Peer Review
+            </p>
+            <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-foreground">
+              Editorial Board
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-2xl">
+              The Uganda Medical Journal is guided by specialist clinicians, academics, and biostatisticians committed to rigorous scientific integrity.
+            </p>
+          </div>
+          <Link
+            to="/editorial-policy"
+            className={buttonVariants({ variant: 'outline', size: 'sm', className: 'shrink-0 self-start md:self-auto' })}
+          >
+            Editorial & Ethics Policy <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+          </Link>
         </div>
 
-        {/* Leadership Section */}
-        <div className="mb-16">
-          <h2 className="text-2xl font-bold text-slate-800 border-b border-slate-200 pb-4 mb-8 text-center sm:text-left">Leadership</h2>
-          <div className="flex justify-center sm:justify-start">
-            {leadership.map((editor, index) => (
-              <Card key={index} className="w-full max-w-md text-center hover:shadow-lg transition-all border-blue-200 bg-white ring-1 ring-blue-100">
-                <CardHeader className="pt-8 pb-4">
-                  <Avatar className="w-28 h-28 mx-auto mb-4 border-4 border-white shadow-md ring-2 ring-blue-500/20">
-                    <AvatarImage src={editor.image} alt={editor.name} />
-                    <AvatarFallback className="bg-blue-100 text-blue-700 text-2xl font-bold">
-                      {editor.name.split(' ').filter(n => !n.includes('.')).map(n => n[0]).join('').substring(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <CardTitle className="text-2xl text-slate-900">{editor.name}</CardTitle>
-                  <div className="mt-2 text-center">
-                    <Badge className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-1 text-sm rounded-full">
-                      {editor.role}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-8">
-                  <p className="text-slate-600 text-base mb-2">{editor.affiliation}</p>
-                  <p className="text-blue-600 text-sm uppercase tracking-wider font-semibold">{editor.specialty}</p>
-                </CardContent>
-              </Card>
+        {/* Senior Leadership */}
+        <section className="mb-14">
+          <h2 className="font-editorial text-2xl font-bold text-foreground mb-6">Senior Editorial Leadership</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {leadership.map((editor) => (
+              <div
+                key={editor.name}
+                className="bg-card border border-border rounded-lg p-6 sm:p-8 flex flex-col sm:flex-row gap-5 items-start"
+              >
+                <div className="h-16 w-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-editorial text-xl font-bold shrink-0">
+                  {editor.initials}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400 mb-1">
+                    {editor.role}
+                  </p>
+                  <h3 className="font-editorial text-xl font-bold text-foreground">
+                    <Link to={`/author/${encodeURIComponent(editor.name)}`} className="hover:underline underline-offset-4">
+                      {editor.name}
+                    </Link>
+                  </h3>
+                  <p className="text-sm font-medium text-foreground/85 mt-1">{editor.affiliation}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{editor.specialty}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-3">{editor.bio}</p>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Editorial Staff Section */}
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800 border-b border-slate-200 pb-4 mb-8 text-center sm:text-left">Editorial Staff</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {editorialStaff.map((editor, index) => (
-              <Card key={index} className="text-center hover:shadow-md transition-shadow border-slate-200 bg-white">
-                <CardHeader className="pt-8 pb-4">
-                  <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-white shadow-sm">
-                    <AvatarImage src={editor.image} alt={editor.name} />
-                    <AvatarFallback className="bg-slate-100 text-slate-700 text-xl font-bold">
-                      {editor.name.split(' ').filter(n => !n.includes('.')).map(n => n[0]).join('').substring(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <CardTitle className="text-xl text-slate-900">{editor.name}</CardTitle>
-                  <div className="mt-2">
-                    <Badge variant="outline" className="text-slate-700 border-slate-300">
-                      {editor.role}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-8">
-                  <p className="text-slate-600 text-sm mb-2">{editor.affiliation}</p>
-                  <p className="text-slate-500 text-xs uppercase tracking-wider font-semibold">{editor.specialty}</p>
-                </CardContent>
-              </Card>
+        {/* Associate & Managing Editors */}
+        <section>
+          <h2 className="font-editorial text-2xl font-bold text-foreground mb-6">
+            Associate & Managing Editors
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {editorialStaff.map((editor) => (
+              <div key={editor.name} className="bg-card border border-border rounded-lg p-6 flex items-start gap-4">
+                <div className="h-12 w-12 rounded-full bg-muted text-foreground flex items-center justify-center font-editorial text-base font-bold shrink-0 border border-border">
+                  {editor.initials}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-0.5">
+                    {editor.role}
+                  </p>
+                  <h3 className="font-editorial text-lg font-bold text-foreground leading-snug">
+                    <Link to={`/author/${encodeURIComponent(editor.name)}`} className="hover:underline underline-offset-4">
+                      {editor.name}
+                    </Link>
+                  </h3>
+                  <p className="text-xs font-medium text-foreground/80 mt-1">{editor.affiliation}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{editor.specialty}</p>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

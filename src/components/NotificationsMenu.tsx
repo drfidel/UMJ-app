@@ -102,19 +102,19 @@ export function NotificationsMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={buttonVariants({ variant: "ghost", size: "icon", className: "relative text-slate-600 hover:text-blue-700 hover:bg-slate-100 h-10 w-10 rounded-full" })}>
-        <Bell className="h-5 w-5" />
+      <DropdownMenuTrigger className={buttonVariants({ variant: "ghost", size: "icon", className: "relative text-muted-foreground hover:text-foreground hover:bg-accent h-9 w-9 rounded-full" })}>
+        <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+          <span className="absolute top-0.5 right-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white tabular-nums">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[380px] p-0" align="end">
-        <div className="flex justify-between items-center p-4 border-b border-slate-100">
-          <span className="font-semibold text-slate-900 text-sm">Notifications</span>
+      <DropdownMenuContent className="w-[360px] max-w-[calc(100vw-2rem)] p-0" align="end">
+        <div className="flex justify-between items-center p-4 border-b border-border">
+          <span className="font-semibold text-foreground text-sm">Notifications</span>
           {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800 hover:bg-transparent">
+            <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto p-0 text-xs text-primary hover:bg-transparent">
               <Check className="h-3.5 w-3.5 mr-1" /> Mark all read
             </Button>
           )}
@@ -122,16 +122,16 @@ export function NotificationsMenu() {
         
         <div className="max-h-[70vh] overflow-y-auto">
           {notifications.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-sm">
-              <Bell className="h-8 w-8 mx-auto mb-3 text-slate-300" />
+            <div className="p-8 text-center text-muted-foreground text-sm">
+              <Bell className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
               <p>You don't have any notifications yet.</p>
             </div>
           ) : (
-            <DropdownMenuGroup className="divide-y divide-slate-100">
+            <DropdownMenuGroup className="divide-y divide-border">
               {notifications.map(notification => (
                 <DropdownMenuItem 
                   key={notification.id} 
-                  className={`p-4 cursor-pointer flex flex-col items-start gap-1 focus:bg-slate-50 ${!notification.read ? 'bg-blue-50/50' : ''}`}
+                  className={`p-4 cursor-pointer flex flex-col items-start gap-1 focus:bg-muted/60 ${!notification.read ? 'bg-primary/5' : ''}`}
                   onClick={() => {
                     if (!notification.read) {
                       if (isDemoMode) {
@@ -145,17 +145,17 @@ export function NotificationsMenu() {
                   }}
                 >
                   <div className="flex justify-between items-start w-full">
-                    <span className={`font-medium text-sm ${!notification.read ? 'text-blue-900' : 'text-slate-900'}`}>
+                    <span className={`font-medium text-sm ${!notification.read ? 'text-primary' : 'text-foreground'}`}>
                       {notification.title}
                     </span>
                     {!notification.read && (
-                      <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0 mt-1.5 ml-2"></span>
+                      <span className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5 ml-2"></span>
                     )}
                   </div>
-                  <p className="text-sm text-slate-600 line-clamp-2">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
                     {notification.message}
                   </p>
-                  <span className="text-xs text-slate-400 mt-1">
+                  <span className="text-xs text-muted-foreground/80 mt-1 font-mono tabular-nums">
                     {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                   </span>
                 </DropdownMenuItem>
