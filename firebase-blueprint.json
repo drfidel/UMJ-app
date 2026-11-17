@@ -32,7 +32,30 @@
         "issue": { "type": "number" },
         "publishedAt": { "type": "string", "format": "date-time" },
         "views": { "type": "number" },
-        "downloads": { "type": "number" }
+        "downloads": { "type": "number" },
+        "citations": { "type": "number" },
+        "specialty": { "type": "string" },
+        "isOpenAccess": { "type": "boolean" },
+        "articleType": {
+          "type": "string",
+          "enum": [
+            "Lead Investigation",
+            "Original Investigation",
+            "Cohort Study",
+            "Randomized Trial",
+            "Clinical Review",
+            "Surveillance Report",
+            "Policy Analysis",
+            "Case Report",
+            "Editorial Commentary"
+          ]
+        },
+        "featuredPlacement": {
+          "type": "string",
+          "enum": ["standard", "lead_investigation", "editors_pick", "special_issue"]
+        },
+        "cmeEligible": { "type": "boolean" },
+        "readTime": { "type": "string" }
       },
       "required": ["id", "title", "abstract", "authors", "pdfUrl", "volume", "issue", "publishedAt"]
     },

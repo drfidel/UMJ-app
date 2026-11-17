@@ -62,9 +62,12 @@ export default function AuthorsList() {
         } else {
           const q = query(collection(db, 'articles'));
           const querySnapshot = await getDocs(q);
-          fetchedArticles = !querySnapshot.empty
-            ? querySnapshot.docs.map((doc) => doc.data() as ArticleMetricsSource)
-            : CURATED_ARTICLES;
+          const mergedMap = new Map<string, ArticleMetricsSource>();
+          CURATED_ARTICLES.forEach((a) => mergedMap.set(a.id, a));
+          querySnapshot.docs.forEach((doc) => {
+            mergedMap.set(doc.id, doc.data() as ArticleMetricsSource);
+          });
+          fetchedArticles = Array.from(mergedMap.values());
         }
 
         setAuthors(buildMap(fetchedArticles));

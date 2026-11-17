@@ -44,7 +44,10 @@ export default function IssueDetail() {
             id: doc.id,
             ...doc.data(),
           })) as JournalArticle[];
-          setArticles(fetchedArticles);
+          const mergedMap = new Map<string, JournalArticle>();
+          fallback.forEach((a) => mergedMap.set(a.id, a));
+          fetchedArticles.forEach((a) => mergedMap.set(a.id, a));
+          setArticles(Array.from(mergedMap.values()));
         } else {
           setArticles(fallback);
         }

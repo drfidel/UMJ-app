@@ -6,7 +6,7 @@ import SEO from '@/components/SEO';
 import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/AuthContext';
-import { CURATED_ARTICLES } from '@/data/journalData';
+import { CURATED_ARTICLES, JournalArticle } from '@/data/journalData';
 import { format } from 'date-fns';
 import heroCoverImg from '@/assets/images/hero_journal_cover_1794934077113.jpg';
 import researchBannerImg from '@/assets/images/hero_research_banner_1794934079008.jpg';
@@ -23,13 +23,40 @@ const FEATURED_SPECIALTIES = [
 ];
 
 export default function Home() {
-  const leadArticle = CURATED_ARTICLES[0];
-  const secondaryArticles = CURATED_ARTICLES.slice(1, 4);
+  const [leadArticle, setLeadArticle] = useState<JournalArticle>(CURATED_ARTICLES[0]);
+  const [secondaryArticles, setSecondaryArticles] = useState<JournalArticle[]>(CURATED_ARTICLES.slice(1, 4));
   const currentIssueToc = CURATED_ARTICLES.slice(0, 3);
 
   const { isDemoMode } = useAuth();
   const [conferences, setConferences] = useState<any[]>([]);
   const [loadingNews, setLoadingNews] = useState(true);
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    let isMounted = true;
+    const fetchFeatured = async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'articles'), orderBy('publishedAt', 'desc'), limit(10)));
+        if (!snap.empty && isMounted) {
+          const liveArticles = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as JournalArticle[];
+          const customLead = liveArticles.find(
+            (a) => a.featuredPlacement === 'lead_investigation' || a.articleType === 'Lead Investigation'
+          );
+          if (customLead) {
+            setLeadArticle(customLead);
+          }
+          const others = [...liveArticles.filter((a) => a.id !== (customLead?.id || CURATED_ARTICLES[0].id)), ...CURATED_ARTICLES.slice(1)];
+          setSecondaryArticles(others.slice(0, 3));
+        }
+      } catch {
+        // Silent fallback to curated defaults
+      }
+    };
+    fetchFeatured();
+    return () => {
+      isMounted = false;
+    };
+  }, [isDemoMode]);
 
   useEffect(() => {
     let isMounted = true;

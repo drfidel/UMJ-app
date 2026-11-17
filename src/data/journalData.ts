@@ -1,3 +1,20 @@
+export type ArticleCategoryType =
+  | 'Lead Investigation'
+  | 'Original Investigation'
+  | 'Cohort Study'
+  | 'Randomized Trial'
+  | 'Clinical Review'
+  | 'Surveillance Report'
+  | 'Policy Analysis'
+  | 'Case Report'
+  | 'Editorial Commentary';
+
+export type FeaturedPlacementType =
+  | 'standard'
+  | 'lead_investigation'
+  | 'editors_pick'
+  | 'special_issue';
+
 export interface JournalArticle {
   id: string;
   title: string;
@@ -17,7 +34,9 @@ export interface JournalArticle {
   citations?: number;
   isOpenAccess?: boolean;
   specialty?: string;
-  articleType?: 'Original Investigation' | 'Cohort Study' | 'Randomized Trial' | 'Clinical Review' | 'Surveillance Report' | 'Policy Analysis';
+  articleType?: ArticleCategoryType;
+  featuredPlacement?: FeaturedPlacementType;
+  cmeEligible?: boolean;
   readTime?: string;
   keyPoints?: {
     question: string;
@@ -27,6 +46,25 @@ export interface JournalArticle {
   funding?: string;
   ethicsApproval?: string;
 }
+
+export const ARTICLE_TYPES: ArticleCategoryType[] = [
+  'Lead Investigation',
+  'Original Investigation',
+  'Cohort Study',
+  'Randomized Trial',
+  'Clinical Review',
+  'Surveillance Report',
+  'Policy Analysis',
+  'Case Report',
+  'Editorial Commentary',
+];
+
+export const PUBLISH_PLACEMENTS: { value: FeaturedPlacementType; label: string; description: string }[] = [
+  { value: 'standard', label: 'Standard Issue Article', description: 'Published in the assigned volume and issue table of contents' },
+  { value: 'lead_investigation', label: 'Lead Investigation Spotlight', description: 'Featured prominently as the cover lead investigation' },
+  { value: 'editors_pick', label: "Editor's Pick", description: 'Highlighted in curated editorial selections' },
+  { value: 'special_issue', label: 'Special Issue Feature', description: 'Flagged as part of a thematic special issue collection' },
+];
 
 export const MEDICAL_SPECIALTIES = [
   'General Medicine',
@@ -373,8 +411,408 @@ export const CURATED_ARTICLES: JournalArticle[] = [
     articleType: 'Cohort Study',
     readTime: '7 min read',
   },
+  {
+    id: '16',
+    title: 'Post-Stroke Rehabilitation Outcomes and Functional Recovery at 6 Months in Kampala',
+    authors: ['Dr. Simon Kigozi', 'Dr. Rachel Nabatte'],
+    affiliations: [
+      'Division of Neurology, Mulago National Referral Hospital',
+      'Department of Medicine, Makerere University College of Health Sciences',
+    ],
+    abstract:
+      'Background: Stroke incidence is rising rapidly across East Africa alongside poorly controlled hypertension, yet structured post-acute neurorehabilitation data remain limited.\n\nMethods: We followed a prospective cohort of 248 acute ischemic and hemorrhagic stroke survivors discharged from Mulago National Referral Hospital over 6 months using the modified Rankin Scale (mRS) and Barthel Index.\n\nResults: Functional independence (mRS 0-2) was achieved in 46.8% of patients at 180 days. Early initiation of inpatient physiotherapy (<72 hours) and caregiver education were strong predictors of favorable recovery (aOR 2.74, 95% CI 1.58-4.75), whereas post-stroke pneumonia and uncontrolled blood pressure were associated with mortality.\n\nConclusion: Protocolized early mobilization and community physiotherapy outreach can substantially improve functional recovery after stroke in resource-constrained referral hospitals.',
+    keywords: ['Stroke', 'Neurology', 'Rehabilitation', 'Hypertension'],
+    volume: 46,
+    issue: 2,
+    publishedAt: new Date('2024-04-28').toISOString(),
+    receivedAt: '2024-01-08',
+    acceptedAt: '2024-03-29',
+    doi: '10.1234/umaj.2024.46.2.09',
+    views: 895,
+    downloads: 360,
+    citations: 7,
+    isOpenAccess: true,
+    specialty: 'Neurology',
+    articleType: 'Cohort Study',
+    readTime: '8 min read',
+    keyPoints: {
+      question: 'What clinical and care-delivery factors predict 6-month functional independence after acute stroke in Kampala?',
+      findings: 'Among 248 stroke survivors, 46.8% regained functional independence by 6 months; early inpatient physiotherapy within 72 hours nearly tripled recovery odds (aOR 2.74).',
+      meaning: 'Integrating early multidisciplinary neurorehabilitation units within national referral hospitals meaningfully improves post-stroke independence.',
+    },
+    funding: 'East African Neurological Care Capacity Grant #2024-03.',
+    ethicsApproval: 'Approved by Makerere University SOMREC (#2023-612).',
+  },
+  {
+    id: '17',
+    title: 'Clinical Spectrum of Bacterial and Fungal Skin Infections in Rural Primary Care Clinics',
+    authors: ['Dr. Grace Lwanga', 'Dr. Jane Namukasa'],
+    affiliations: [
+      'Department of Dermatology, Mbarara Regional Referral Hospital',
+      'Makerere University College of Health Sciences, Kampala',
+    ],
+    abstract:
+      'Background: Cutaneous infections account for a high proportion of outpatient visits in tropical primary care, yet empiric prescribing without microbiological guidance often leads to treatment failure.\n\nMethods: A cross-sectional diagnostic survey of 512 patients presenting with pyoderma, tinea capitis, or chronic interdigital dermatoses at six rural Health Centre III clinics in Southwestern Uganda.\n\nResults: Tinea capitis (34.2%) and impetigo secondary to scabies infestation (28.7%) were the predominant diagnoses. Methicillin-resistant Staphylococcus aureus was isolated in 19.4% of cultured bacterial lesions, while topical steroid misuse was documented in 31% of patients prior to clinic presentation.\n\nConclusion: Diagnostic capacity building for clinical officers and community education against non-prescribed topical corticosteroids are critical for primary dermatologic care.',
+    keywords: ['Dermatology', 'Primary Care', 'Scabies', 'Antimicrobial Stewardship'],
+    volume: 46,
+    issue: 1,
+    publishedAt: new Date('2024-02-19').toISOString(),
+    receivedAt: '2023-10-14',
+    acceptedAt: '2024-01-22',
+    doi: '10.1234/umaj.2024.46.1.07',
+    views: 640,
+    downloads: 245,
+    citations: 4,
+    isOpenAccess: true,
+    specialty: 'Dermatology',
+    articleType: 'Original Investigation',
+    readTime: '6 min read',
+    keyPoints: {
+      question: 'What are the leading dermatologic etiologies and inappropriate prescribing patterns seen in rural Ugandan primary care clinics?',
+      findings: 'Of 512 patients, 34.2% had tinea capitis and 28.7% had scabies-associated impetigo; 31% had used over-the-counter topical steroids before assessment.',
+      meaning: 'Training primary care clinicians in syndromic skin diagnosis can curb antimicrobial resistance and steroid-modified dermatoses.',
+    },
+  },
+  {
+    id: '18',
+    title: 'Task-Shifting Hypertension Management to Village Health Teams: A Cluster-Randomized Trial',
+    authors: ['Dr. Moses Byaruhanga', 'Dr. David Otim'],
+    affiliations: [
+      'Department of Family Medicine, Makerere University College of Health Sciences',
+      'Gulu University Faculty of Medicine',
+    ],
+    abstract:
+      'Background: Less than 15% of adults with hypertension in rural Uganda achieve blood pressure control under facility-only care models.\n\nMethods: In a 12-month cluster-randomized trial spanning 24 parishes in Wakiso and Gulu districts (n=1,120 hypertensive adults), trained Village Health Teams (VHTs) conducted monthly home blood pressure monitoring, adherence counseling, and algorithm-guided refills compared with standard clinic care.\n\nResults: At 12 months, mean systolic blood pressure decreased by 14.6 mmHg in the intervention arm versus 5.2 mmHg in controls (mean difference -9.4 mmHg, p<0.001). Blood pressure control (<140/90 mmHg) reached 54.8% vs 26.3%.\n\nConclusion: Community-based task-shifting supported by supervision and steady antihypertensive supply significantly improves hypertension control in primary care.',
+    keywords: ['Hypertension', 'Family Medicine', 'Task-Shifting', 'Primary Care'],
+    volume: 46,
+    issue: 2,
+    publishedAt: new Date('2024-04-22').toISOString(),
+    receivedAt: '2023-12-01',
+    acceptedAt: '2024-03-18',
+    doi: '10.1234/umaj.2024.46.2.03',
+    views: 1410,
+    downloads: 620,
+    citations: 21,
+    isOpenAccess: true,
+    specialty: 'Family Medicine',
+    articleType: 'Randomized Trial',
+    readTime: '9 min read',
+    keyPoints: {
+      question: 'Can structured hypertension monitoring and medication support delivered by Village Health Teams improve blood pressure control?',
+      findings: 'In this cluster-randomized trial of 1,120 adults, VHT-led home follow-up doubled 12-month blood pressure control (54.8% vs 26.3%).',
+      meaning: 'Integrating VHTs into chronic non-communicable disease pathways offers a scalable strategy for rural cardiovascular risk reduction.',
+    },
+    funding: 'Uganda Non-Communicable Diseases Implementation Alliance.',
+    ethicsApproval: 'UNCST Registration HS-3104.',
+  },
+  {
+    id: '19',
+    title: 'Point-of-Care Ultrasound Triage for Undifferentiated Dyspnea in District Emergency Units',
+    authors: ['Dr. David Otim', 'Dr. Simon Kigozi'],
+    affiliations: [
+      'Department of Emergency & General Medicine, Lacor Hospital, Gulu',
+      'Mulago National Referral Hospital',
+    ],
+    abstract:
+      'Background: Limited radiology infrastructure in district hospitals delays differentiation between heart failure, pneumonia, and tuberculous pleural effusion.\n\nMethods: Prospective diagnostic accuracy study evaluating a 10-minute bedside lung and focused cardiac ultrasound protocol performed by general medical officers in 318 adults presenting with acute dyspnea.\n\nResults: Point-of-care ultrasound modified the initial working diagnosis in 44.3% of cases and demonstrated 92.8% sensitivity and 89.5% specificity for acute decompensated heart failure against consultant adjudication.\n\nConclusion: Focused bedside ultrasonography enhances diagnostic precision and expedites targeted therapy in general medical emergency settings.',
+    keywords: ['Ultrasound', 'General Medicine', 'Emergency Care', 'Dyspnea'],
+    volume: 45,
+    issue: 3,
+    publishedAt: new Date('2023-10-24').toISOString(),
+    receivedAt: '2023-06-19',
+    acceptedAt: '2023-09-25',
+    doi: '10.1234/umaj.2023.45.3.05',
+    views: 910,
+    downloads: 385,
+    citations: 11,
+    isOpenAccess: true,
+    specialty: 'General Medicine',
+    articleType: 'Original Investigation',
+    readTime: '7 min read',
+    keyPoints: {
+      question: 'How accurately does a rapid general medical officer ultrasound protocol classify acute dyspnea in district emergency units?',
+      findings: 'Among 318 patients, bedside ultrasound changed the initial clinical diagnosis in 44.3% of presentations with 92.8% sensitivity for acute heart failure.',
+      meaning: 'Portable ultrasound training for general medical officers represents a high-yield diagnostic investment for district hospitals.',
+    },
+  },
+  {
+    id: '20',
+    title: 'Hepatitis B Birth-Dose Vaccination Feasibility and Maternal Screening in Northern Uganda',
+    authors: ['Prof. Emmanuel Mukiibi', 'Dr. Florence Akello'],
+    affiliations: [
+      'Makerere University Infectious Diseases Institute',
+      'Mbale Regional Referral Hospital',
+    ],
+    abstract:
+      'Background: Mother-to-child transmission sustains high chronic Hepatitis B endemicity in Northern Uganda despite routine pentavalent infant immunization at 6 weeks.\n\nMethods: Implementation cohort evaluating universal antenatal HBsAg rapid screening and timely (<24 hour) monovalent Hepatitis B birth-dose vaccination across 1,450 mother-infant pairs.\n\nResults: Antenatal HBsAg seroprevalence was 7.8%. Timely birth-dose coverage reached 86.2% for facility deliveries, with zero serious adverse events and 97.4% seroprotection at 9 months among infants born to HBsAg-positive mothers.\n\nConclusion: Universal Hepatitis B birth-dose administration is logistically feasible within existing maternal-newborn delivery workflows.',
+    keywords: ['Hepatitis B', 'Vaccination', 'Maternal Health', 'Infectious Diseases'],
+    volume: 44,
+    issue: 2,
+    publishedAt: new Date('2022-05-18').toISOString(),
+    doi: '10.1234/umaj.2022.44.2.04',
+    views: 780,
+    downloads: 330,
+    citations: 14,
+    isOpenAccess: true,
+    specialty: 'Infectious Diseases',
+    articleType: 'Cohort Study',
+    readTime: '7 min read',
+  },
+  {
+    id: '21',
+    title: 'Minimally Invasive Laparoscopic Appendectomy Outcomes in a Resource-Limited Tertiary Setting',
+    authors: ['Dr. Rachel Nabatte', 'Dr. David Otim'],
+    affiliations: ['Department of Surgery, Mulago National Referral Hospital'],
+    abstract:
+      'Background: Adoption of laparoscopic surgery in sub-Saharan Africa has expanded gradually, though comparative perioperative outcome data remain sparse.\n\nMethods: Retrospective comparison of 165 laparoscopic versus 290 open appendectomies performed between 2019 and 2021 at a national referral surgical unit.\n\nResults: Laparoscopic cases exhibited significantly lower wound infection rates (3.0% vs 11.4%, p=0.002) and shorter median hospital stay (2 days vs 4 days), with comparable operative duration after the initial 40-case learning curve.\n\nConclusion: Structured laparoscopic training yields safe, lower-morbidity surgical outcomes in East African tertiary hospitals.',
+    keywords: ['Surgery', 'Laparoscopy', 'Appendectomy', 'Surgical Outcomes'],
+    volume: 44,
+    issue: 2,
+    publishedAt: new Date('2022-05-25').toISOString(),
+    doi: '10.1234/umaj.2022.44.2.08',
+    views: 625,
+    downloads: 240,
+    citations: 8,
+    isOpenAccess: false,
+    specialty: 'Surgery',
+    articleType: 'Cohort Study',
+    readTime: '6 min read',
+  },
+  {
+    id: '22',
+    title: 'Integrating Depression Screening into Routine Antenatal Care: A District Hospital Audit',
+    authors: ['Dr. Grace Lwanga', 'Dr. Sarah Kizza'],
+    affiliations: [
+      'Butabika National Referral Mental Hospital',
+      'Mulago National Referral Hospital',
+    ],
+    abstract:
+      'Background: Perinatal depression frequently goes unrecognized in busy maternal clinics, compromising maternal well-being and infant care.\n\nMethods: Clinical audit implementing the Luganda-validated Edinburgh Postnatal Depression Scale (EPDS) across 780 second- and third-trimester antenatal visits.\n\nResults: Screen-positive perinatal depression prevalence (EPDS >=13) was 18.6%. Brief nurse-delivered problem-solving therapy led to symptom remission in 64% of enrolled women at 12 weeks postpartum.\n\nConclusion: Embedding standardized 5-minute mental health screening into routine antenatal triage is acceptable and clinically impactful.',
+    keywords: ['Perinatal Mental Health', 'Psychiatry', 'Antenatal Care'],
+    volume: 44,
+    issue: 1,
+    publishedAt: new Date('2022-01-24').toISOString(),
+    doi: '10.1234/umaj.2022.44.1.03',
+    views: 705,
+    downloads: 295,
+    citations: 12,
+    isOpenAccess: true,
+    specialty: 'Psychiatry',
+    articleType: 'Original Investigation',
+    readTime: '7 min read',
+  },
+  {
+    id: '23',
+    title: 'Glycemic Control and Retinopathy Screening Among Youth with Type 1 Diabetes',
+    authors: ['Dr. Sarah Kizza', 'Dr. Simon Kigozi'],
+    affiliations: ['Pediatric Endocrinology Clinic, Mulago Hospital'],
+    abstract:
+      'Background: Insulin supply stability and structured HbA1c monitoring remain vital barriers for youth living with Type 1 diabetes.\n\nMethods: Observational evaluation of 195 patients aged 5-22 years enrolled in the Changing Diabetes in Children registry over 24 months.\n\nResults: Median HbA1c declined from 10.8% to 8.9% following peer-support camps and refrigerated insulin pen provision; non-proliferative diabetic retinopathy was detected in 9.2% of adolescents.\n\nConclusion: Decentralized cold-chain insulin support coupled with annual retinal photography reduces early microvascular complications.',
+    keywords: ['Type 1 Diabetes', 'Pediatrics', 'Endocrinology', 'Retinopathy'],
+    volume: 44,
+    issue: 1,
+    publishedAt: new Date('2022-01-30').toISOString(),
+    doi: '10.1234/umaj.2022.44.1.07',
+    views: 590,
+    downloads: 215,
+    citations: 6,
+    isOpenAccess: false,
+    specialty: 'Internal Medicine',
+    articleType: 'Cohort Study',
+    readTime: '6 min read',
+  },
+  {
+    id: '24',
+    title: 'Oxygen Therapy Delivery and Pulse Oximetry Gaps During the Delta Wave in Uganda',
+    authors: ['Prof. Samuel Lwanga', 'Dr. Peter Okello'],
+    affiliations: ['Makerere University College of Health Sciences', 'Uganda Ministry of Health'],
+    abstract:
+      'Background: Rapid surges in severe COVID-19 hypoxemia placed unprecedented strain on regional medical oxygen plants and hospital cylinder logistics.\n\nMethods: National facility readiness assessment across 14 regional referral hospitals and 32 general hospitals between May and October 2021.\n\nResults: Functional pulse oximeters were present in 91% of ICU beds but only 38% of general medical wards at baseline; installation of pressure-swing adsorption (PSA) plants reduced acute oxygen stock-outs by 72%.\n\nConclusion: Sustaining biomedical engineering maintenance budgets is essential to protect pandemic oxygen infrastructure gains.',
+    keywords: ['COVID-19', 'Medical Oxygen', 'Health Systems', 'Public Health'],
+    volume: 43,
+    issue: 4,
+    publishedAt: new Date('2021-11-18').toISOString(),
+    doi: '10.1234/umaj.2021.43.4.01',
+    views: 1180,
+    downloads: 530,
+    citations: 24,
+    isOpenAccess: true,
+    specialty: 'Public Health',
+    articleType: 'Surveillance Report',
+    readTime: '8 min read',
+  },
+  {
+    id: '25',
+    title: 'Visceral Leishmaniasis Surveillance and Diagnostic Delays in Karamoja Sub-Region',
+    authors: ['Dr. Peter Okello', 'Prof. Emmanuel Mukiibi'],
+    affiliations: ['Amudat Hospital Kala-azar Treatment Centre', 'Makerere University'],
+    abstract:
+      'Background: Karamoja represents Uganda’s primary endemic focus for visceral leishmaniasis (kala-azar), where nomadic pastoralism complicates early diagnosis.\n\nMethods: Review of 342 confirmed cases managed at Amudat Hospital over 36 months, assessing diagnostic intervals and sodium stibogluconate-paromomycin (SSG-PM) cure rates.\n\nResults: Median symptom-to-diagnosis delay was 58 days. SSG-PM combination therapy achieved a 95.3% initial cure rate with low relapse at 6 months.\n\nConclusion: Expanding rK39 rapid diagnostic testing to mobile outreach clinics can halve diagnostic delays and prevent severe anemia.',
+    keywords: ['Leishmaniasis', 'Neglected Tropical Diseases', 'Tropical Medicine'],
+    volume: 43,
+    issue: 3,
+    publishedAt: new Date('2021-08-20').toISOString(),
+    doi: '10.1234/umaj.2021.43.3.02',
+    views: 540,
+    downloads: 230,
+    citations: 9,
+    isOpenAccess: true,
+    specialty: 'Tropical Medicine',
+    articleType: 'Surveillance Report',
+    readTime: '6 min read',
+  },
+  {
+    id: '26',
+    title: 'Biomedical Equipment Maintenance Capacity and Cold-Chain Reliability in Rural Health Centers',
+    authors: ['Dr. Moses Byaruhanga', 'Dr. Jane Namukasa'],
+    affiliations: ['Uganda Medical Association Health Systems Unit', 'Makerere University'],
+    abstract:
+      'Background: Non-functional diagnostic equipment and intermittent power outages undermine primary laboratory and immunization services.\n\nMethods: Cross-sectional infrastructure audit across 48 Health Centre IVs evaluating solar direct-drive cold-chain uptime and preventive maintenance cycles.\n\nResults: Solar direct-drive vaccine refrigerators maintained target 2-8°C temperatures 98.4% of operational days, whereas only 41% of hematology analyzers had active service contracts.\n\nConclusion: Regional biomedical workshop hubs with pooled spare-parts procurement significantly reduce equipment downtime.',
+    keywords: ['Health Infrastructure', 'Cold Chain', 'Health Systems', 'Public Health'],
+    volume: 43,
+    issue: 2,
+    publishedAt: new Date('2021-04-14').toISOString(),
+    doi: '10.1234/umaj.2021.43.2.05',
+    views: 495,
+    downloads: 190,
+    citations: 7,
+    isOpenAccess: false,
+    specialty: 'Public Health',
+    articleType: 'Policy Analysis',
+    readTime: '7 min read',
+  },
+  {
+    id: '27',
+    title: 'Competency-Based Clinical Simulation in Undergraduate Medical Curricula Across Ugandan Universities',
+    authors: ['Prof. Samuel Lwanga', 'Dr. Florence Akello'],
+    affiliations: [
+      'Makerere University College of Health Sciences',
+      'Busitema University Faculty of Health Sciences',
+    ],
+    abstract:
+      'Background: Rising medical school enrollment requires innovative clinical skills training before ward rotations.\n\nMethods: Multi-institutional curriculum review and OSCE performance comparison across 420 final-year medical students exposed to structured low-cost simulation labs.\n\nResults: Simulation-trained cohorts scored 16.4 percentage points higher in emergency obstetric and neonatal resuscitation OSCE stations (p<0.001) and reported higher clinical confidence.\n\nConclusion: Standardized simulation skills laboratories strengthen clinical preparedness without compromising patient safety.',
+    keywords: ['Medical Education', 'Clinical Simulation', 'Curriculum', 'Uganda'],
+    volume: 43,
+    issue: 1,
+    publishedAt: new Date('2021-02-11').toISOString(),
+    doi: '10.1234/umaj.2021.43.1.01',
+    views: 760,
+    downloads: 340,
+    citations: 15,
+    isOpenAccess: true,
+    specialty: 'General Medicine',
+    articleType: 'Original Investigation',
+    readTime: '7 min read',
+  },
+  {
+    id: '28',
+    title: 'Rheumatic Heart Disease Echocardiographic Screening Among Schoolchildren in Central Uganda',
+    authors: ['Dr. Simon Kigozi', 'Dr. Sarah Kizza'],
+    affiliations: [
+      'Uganda Heart Institute, Mulago',
+      'Department of Paediatrics, Makerere University',
+    ],
+    abstract:
+      'Background: Rheumatic heart disease (RHD) remains the leading cause of acquired heart disease in Ugandan children and young adults, often presenting late with valve failure.\n\nMethods: School-based handheld echocardiographic screening study involving 2,140 primary and secondary pupils aged 6-16 years using World Heart Federation criteria.\n\nResults: Latent RHD prevalence was 2.4% (1.7% borderline, 0.7% definite). Secondary benzathine penicillin G prophylaxis achieved 89% 12-month adherence when linked to school nurses.\n\nConclusion: Targeted echocardiographic screening paired with school-linked prophylaxis enables early valve preservation.',
+    keywords: ['Rheumatic Heart Disease', 'Cardiology', 'Echocardiography', 'Pediatrics'],
+    volume: 46,
+    issue: 1,
+    publishedAt: new Date('2024-02-27').toISOString(),
+    receivedAt: '2023-10-30',
+    acceptedAt: '2024-01-29',
+    doi: '10.1234/umaj.2024.46.1.09',
+    views: 1090,
+    downloads: 475,
+    citations: 10,
+    isOpenAccess: true,
+    specialty: 'Cardiology',
+    articleType: 'Original Investigation',
+    readTime: '8 min read',
+    keyPoints: {
+      question: 'What is the prevalence of latent rheumatic heart disease among Ugandan schoolchildren using portable echocardiography?',
+      findings: 'Of 2,140 screened pupils, 2.4% met World Heart Federation criteria for latent RHD, with 89% 1-year penicillin adherence via school nurse coordination.',
+      meaning: 'Portable school screening offers an actionable window for secondary prevention before irreversible valvular damage develops.',
+    },
+  },
 ];
 
 export const CURATED_ARTICLE_MAP: Record<string, JournalArticle> = Object.fromEntries(
   CURATED_ARTICLES.map((a) => [a.id, a])
 );
+
+export const CURATED_AUTHOR_PROFILES: Record<
+  string,
+  {
+    affiliation: string;
+    specialties: string[];
+    isVerifiedReviewer?: boolean;
+    completedReviews?: number;
+    orcid?: string;
+  }
+> = {
+  'Dr. Jane Namukasa': {
+    affiliation: 'Makerere University, College of Health Sciences',
+    specialties: ['Epidemiology', 'Maternal Health', 'Infectious Diseases'],
+    isVerifiedReviewer: true,
+    completedReviews: 14,
+    orcid: '0000-0002-1825-0097',
+  },
+  'Dr. Peter Okello': {
+    affiliation: 'Uganda Ministry of Health & Gulu University',
+    specialties: ['Public Health', 'Infectious Diseases', 'Tropical Medicine'],
+    isVerifiedReviewer: true,
+    completedReviews: 9,
+    orcid: '0000-0001-6421-3812',
+  },
+  'Prof. Samuel Lwanga': {
+    affiliation: 'Makerere University College of Health Sciences, Kampala',
+    specialties: ['Health Systems', 'Medical Education', 'Epidemiology'],
+    isVerifiedReviewer: true,
+    completedReviews: 19,
+  },
+  'Dr. Sarah Kizza': {
+    affiliation: 'Mulago National Referral Hospital',
+    specialties: ['Pediatrics', 'HIV/AIDS', 'Hematology'],
+    isVerifiedReviewer: true,
+    completedReviews: 11,
+    orcid: '0000-0003-4119-7721',
+  },
+  'Prof. Emmanuel Mukiibi': {
+    affiliation: 'Makerere University Infectious Diseases Institute',
+    specialties: ['Infectious Diseases', 'Virology', 'Tropical Medicine'],
+    isVerifiedReviewer: true,
+    completedReviews: 16,
+  },
+  'Dr. Moses Byaruhanga': {
+    affiliation: 'Mbarara University of Science and Technology',
+    specialties: ['Family Medicine', 'Public Health', 'Non-Communicable Diseases'],
+    isVerifiedReviewer: true,
+    completedReviews: 7,
+  },
+  'Dr. Florence Akello': {
+    affiliation: 'Mbale Regional Referral Hospital',
+    specialties: ['Obstetrics & Gynecology', 'Oncology', 'Medical Education'],
+    isVerifiedReviewer: true,
+    completedReviews: 10,
+  },
+  'Dr. David Otim': {
+    affiliation: 'Gulu University Faculty of Medicine',
+    specialties: ['General Surgery', 'General Medicine', 'Health Systems'],
+    isVerifiedReviewer: true,
+    completedReviews: 8,
+  },
+  'Dr. Rachel Nabatte': {
+    affiliation: 'Mulago National Referral Hospital',
+    specialties: ['General Surgery', 'Obstetrics & Gynecology', 'Telemedicine'],
+  },
+  'Dr. Grace Lwanga': {
+    affiliation: 'Mbarara Regional Referral Hospital & Butabika Hospital',
+    specialties: ['Dermatology', 'Psychiatry', 'Nutrition'],
+  },
+  'Dr. Simon Kigozi': {
+    affiliation: 'Uganda Heart Institute & Mulago Neurology Unit',
+    specialties: ['Cardiology', 'Neurology', 'Endocrinology'],
+    isVerifiedReviewer: true,
+    completedReviews: 12,
+  },
+};

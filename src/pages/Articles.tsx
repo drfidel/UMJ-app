@@ -30,7 +30,7 @@ import Fuse from 'fuse.js';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 import SEO from '@/components/SEO';
-import { CURATED_ARTICLES, MEDICAL_SPECIALTIES, JournalArticle } from '@/data/journalData';
+import { CURATED_ARTICLES, MEDICAL_SPECIALTIES, ARTICLE_TYPES, JournalArticle } from '@/data/journalData';
 
 export const medicalSpecialties = MEDICAL_SPECIALTIES;
 
@@ -44,6 +44,7 @@ export default function Articles() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [filterYear, setFilterYear] = useState(searchParams.get('year') || 'all');
   const [filterSpecialty, setFilterSpecialty] = useState(searchParams.get('specialty') || 'all');
+  const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || 'all');
   const [filterAccess, setFilterAccess] = useState<'all' | 'open' | 'subscription'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
   const [expandedAbstracts, setExpandedAbstracts] = useState<Record<string, boolean>>({});
@@ -93,7 +94,7 @@ export default function Articles() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterYear, filterSpecialty, filterAccess, sortBy]);
+  }, [searchTerm, filterYear, filterSpecialty, filterCategory, filterAccess, sortBy]);
 
   const toggleBookmark = async (articleId: string) => {
     if (!user) {
@@ -141,7 +142,13 @@ export default function Articles() {
             id: doc.id,
             ...doc.data(),
           })) as JournalArticle[];
-          setArticles(fetchedArticles);
+          const mergedMap = new Map<string, JournalArticle>();
+          CURATED_ARTICLES.forEach((a) => mergedMap.set(a.id, a));
+          fetchedArticles.forEach((a) => mergedMap.set(a.id, a));
+          const merged = Array.from(mergedMap.values()).sort(
+            (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+          );
+          setArticles(merged);
         } else {
           setArticles(CURATED_ARTICLES);
         }
@@ -163,11 +170,15 @@ export default function Articles() {
       const articleYear = new Date(article.publishedAt).getFullYear().toString();
       const yearMatch = filterYear === 'all' || articleYear === filterYear;
       const specialtyMatch = filterSpecialty === 'all' || article.specialty === filterSpecialty;
+      const categoryMatch =
+        filterCategory === 'all' ||
+        article.articleType === filterCategory ||
+        (filterCategory === 'Lead Investigation' && article.featuredPlacement === 'lead_investigation');
       const accessMatch =
         filterAccess === 'all' ||
         (filterAccess === 'open' && Boolean(article.isOpenAccess)) ||
         (filterAccess === 'subscription' && !article.isOpenAccess);
-      return yearMatch && specialtyMatch && accessMatch;
+      return yearMatch && specialtyMatch && categoryMatch && accessMatch;
     });
 
     let searched = filtered;
@@ -194,7 +205,7 @@ export default function Articles() {
       }
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
-  }, [articles, filterYear, filterSpecialty, filterAccess, searchTerm, sortBy]);
+  }, [articles, filterYear, filterSpecialty, filterCategory, filterAccess, searchTerm, sortBy]);
 
   const years = ['all', ...Array.from(new Set(articles.map((a) => new Date(a.publishedAt).getFullYear().toString())))].sort((a, b) =>
     b.localeCompare(a)
@@ -207,11 +218,16 @@ export default function Articles() {
   );
 
   const hasActiveFilters =
-    searchTerm.trim() !== '' || filterSpecialty !== 'all' || filterYear !== 'all' || filterAccess !== 'all';
+    searchTerm.trim() !== '' ||
+    filterSpecialty !== 'all' ||
+    filterCategory !== 'all' ||
+    filterYear !== 'all' ||
+    filterAccess !== 'all';
 
   const resetAllFilters = () => {
     setSearchTerm('');
     setFilterSpecialty('all');
+    setFilterCategory('all');
     setFilterYear('all');
     setFilterAccess('all');
     setSortBy('newest');
@@ -284,7 +300,7 @@ export default function Articles() {
 
         {/* Search & Faceted Filters */}
         <div className="bg-card p-4 rounded-lg border border-border mb-8 grid grid-cols-1 md:grid-cols-12 gap-3">
-          <div className="relative md:col-span-5">
+          <div className="relative md:col-span-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               type="text"
@@ -295,7 +311,23 @@ export default function Articles() {
             />
           </div>
 
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
+            <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v || 'all')}>
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {ARTICLE_TYPES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="md:col-span-2">
             <Select value={filterSpecialty} onValueChange={handleSpecialtyChange}>
               <SelectTrigger className="w-full bg-background">
                 <SelectValue placeholder="All Specialties" />
@@ -383,9 +415,27 @@ export default function Articles() {
                     <div className="min-w-0 flex-1">
                       {/* Clean Unboxed Metadata Line */}
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground mb-2">
-                        <span className="font-semibold text-foreground/85">
+                        <span
+                          className={`font-semibold ${
+                            article.articleType === 'Lead Investigation' || article.featuredPlacement === 'lead_investigation'
+                              ? 'text-red-700 dark:text-red-400 uppercase tracking-wider'
+                              : 'text-foreground/85'
+                          }`}
+                        >
                           {article.articleType || 'Research Article'}
                         </span>
+                        {article.featuredPlacement === 'editors_pick' && (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span className="font-semibold text-primary">Editor&apos;s Pick</span>
+                          </>
+                        )}
+                        {article.featuredPlacement === 'special_issue' && (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span className="font-semibold text-indigo-700 dark:text-indigo-400">Special Issue</span>
+                          </>
+                        )}
                         {article.specialty && (
                           <>
                             <span aria-hidden="true">·</span>
@@ -409,6 +459,12 @@ export default function Articles() {
                           <span className="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400">
                             <Lock className="h-3 w-3" /> Subscription
                           </span>
+                        )}
+                        {article.cmeEligible && (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span className="font-semibold text-blue-700 dark:text-blue-400">1.0 CME Credit</span>
+                          </>
                         )}
                       </div>
 

@@ -715,6 +715,18 @@ export default function ArticleDetail() {
                 <span className="font-semibold uppercase tracking-wider text-red-700 dark:text-red-400">
                   {article.articleType || 'Research Article'}
                 </span>
+                {article.featuredPlacement === 'editors_pick' && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-semibold text-primary">Editor&apos;s Pick</span>
+                  </>
+                )}
+                {article.featuredPlacement === 'special_issue' && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-semibold text-indigo-700 dark:text-indigo-400">Special Issue</span>
+                  </>
+                )}
                 {article.specialty && (
                   <>
                     <span aria-hidden="true">·</span>
@@ -736,6 +748,12 @@ export default function ArticleDetail() {
                   <span className="inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400">
                     <Lock className="h-3 w-3" /> Subscription
                   </span>
+                )}
+                {article.cmeEligible && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-semibold text-blue-700 dark:text-blue-400">1.0 CME Credit</span>
+                  </>
                 )}
               </div>
 

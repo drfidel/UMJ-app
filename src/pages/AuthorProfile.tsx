@@ -8,83 +8,30 @@ import { Badge } from '@/components/ui/badge';
 import { User, BookOpen, Building, GraduationCap, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
+import SEO from '@/components/SEO';
+import { CURATED_ARTICLES, CURATED_AUTHOR_PROFILES, JournalArticle } from '@/data/journalData';
+
 export default function AuthorProfile() {
   const { name } = useParams<{ name: string }>();
   const decodedName = name ? decodeURIComponent(name) : '';
-  
+
   const [authorProfile, setAuthorProfile] = useState<any | null>(null);
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<JournalArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const { isDemoMode } = useAuth();
-
-  const dummyProfiles: Record<string, any> = {
-    'Dr. Jane Namukasa': { affiliation: 'Makerere University, College of Health Sciences', specialties: ['Epidemiology', 'Maternal Health'], isVerifiedReviewer: true, completedReviews: 14 },
-    'Dr. Peter Okello': { affiliation: 'Uganda Ministry of Health', specialties: ['Public Health', 'Infectious Diseases'], isVerifiedReviewer: false },
-    'Dr. Sarah Kizza': { affiliation: 'Mulago National Referral Hospital', specialties: ['Pediatrics', 'HIV/AIDS'], isVerifiedReviewer: true, completedReviews: 8 },
-    'Prof. Emmanuel Mukiibi': { affiliation: 'Makerere University', specialties: ['Infectious Diseases', 'Virology'] },
-    'Dr. Moses Byaruhanga': { affiliation: 'Mbarara University of Science and Technology', specialties: ['Traditional Medicine', 'Public Health'] },
-    'Dr. Florence Akello': { affiliation: 'Mbale Regional Referral Hospital', specialties: ['Obstetrics', 'Gynecology'] },
-    'Dr. David Otim': { affiliation: 'Gulu University', specialties: ['Public Health', 'Health Systems'] },
-  };
-
-  const dummyArticles = [
-    {
-      id: '1',
-      title: 'Prevalence and Risk Factors of Malaria in Pregnant Women in Rural Uganda',
-      authors: ['Dr. Jane Namukasa', 'Dr. Peter Okello'],
-      abstract: 'This study investigates the current prevalence rates and associated risk factors for malaria infection among pregnant women attending antenatal care in rural health centers across Uganda. Results indicate a need for intensified preventive measures.',
-      keywords: ['Malaria', 'Maternal Health', 'Epidemiology'],
-      volume: 45,
-      issue: 3,
-      publishedAt: new Date('2023-10-15').toISOString(),
-      isOpenAccess: false,
-    },
-    {
-      id: '2',
-      title: 'Outcomes of Antiretroviral Therapy in Pediatric HIV Patients: A 5-Year Retrospective Cohort',
-      authors: ['Dr. Sarah Kizza', 'Prof. Emmanuel Mukiibi'],
-      abstract: 'A comprehensive review of treatment outcomes, adherence rates, and viral load suppression among pediatric patients receiving ART at Mulago National Referral Hospital. The study highlights challenges in adolescent transition.',
-      keywords: ['HIV/AIDS', 'Pediatrics', 'Infectious Diseases'],
-      volume: 45,
-      issue: 3,
-      publishedAt: new Date('2023-11-02').toISOString(),
-      isOpenAccess: true,
-    },
-    {
-      id: '3',
-      title: 'Integration of Traditional Medicine with Modern Healthcare in Managing Non-Communicable Diseases',
-      authors: ['Dr. Moses Byaruhanga'],
-      abstract: 'Exploring the complementary role of traditional herbal remedies alongside conventional treatments for hypertension and diabetes in Ugandan communities. The paper proposes a framework for safe integration.',
-      keywords: ['Public Health', 'Non-Communicable Diseases'],
-      volume: 45,
-      issue: 2,
-      publishedAt: new Date('2023-08-10').toISOString(),
-      isOpenAccess: true,
-    },
-    {
-      id: '4',
-      title: 'Maternal Mortality Trends in Eastern Uganda: 2015-2022',
-      authors: ['Dr. Florence Akello', 'Dr. David Otim'],
-      abstract: 'An analysis of maternal mortality ratios in Eastern Uganda over an 8-year period, identifying primary causes of death and evaluating the impact of recent health system interventions.',
-      keywords: ['Maternal Health', 'Public Health', 'Obstetrics'],
-      volume: 44,
-      issue: 4,
-      publishedAt: new Date('2022-12-05').toISOString(),
-      isOpenAccess: false,
-    }
-  ];
 
   useEffect(() => {
     const fetchAuthorData = async () => {
       if (!decodedName) return;
-      
+
       setLoading(true);
-      
+      const curatedForAuthor = CURATED_ARTICLES.filter((a) => a.authors.includes(decodedName));
+
       // 1. Try to find the user profile in the 'users' collection
       try {
         if (isDemoMode) {
-          if (dummyProfiles[decodedName]) {
-            setAuthorProfile(dummyProfiles[decodedName]);
+          if (CURATED_AUTHOR_PROFILES[decodedName]) {
+            setAuthorProfile(CURATED_AUTHOR_PROFILES[decodedName]);
           }
         } else {
           const usersQuery = query(
@@ -92,65 +39,53 @@ export default function AuthorProfile() {
             where('displayName', '==', decodedName)
           );
           const usersSnap = await getDocs(usersQuery);
-          
+
           if (!usersSnap.empty) {
             setAuthorProfile(usersSnap.docs[0].data());
-          } else {
-            // Dummy profile fallback
-            if (dummyProfiles[decodedName]) {
-              setAuthorProfile(dummyProfiles[decodedName]);
-            }
+          } else if (CURATED_AUTHOR_PROFILES[decodedName]) {
+            setAuthorProfile(CURATED_AUTHOR_PROFILES[decodedName]);
           }
         }
       } catch (error) {
-        if (error instanceof Error && error.message.includes('offline')) {
-          // Silent fallback
-        } else {
-          console.error("Error fetching user profile:", error);
+        if (!(error instanceof Error && error.message.includes('offline'))) {
+          console.error('Error fetching user profile:', error);
         }
-        // Fallback to dummy profile
-        if (dummyProfiles[decodedName]) {
-          setAuthorProfile(dummyProfiles[decodedName]);
+        if (CURATED_AUTHOR_PROFILES[decodedName]) {
+          setAuthorProfile(CURATED_AUTHOR_PROFILES[decodedName]);
         }
       }
 
-      // 2. Find all articles by this author
+      // 2. Find all articles by this author and merge with curated archive
       try {
-        let fetchedArticles: any[] = [];
+        let fetchedArticles: JournalArticle[] = [];
 
         if (isDemoMode) {
-          fetchedArticles = dummyArticles.filter(a => a.authors.includes(decodedName));
+          fetchedArticles = curatedForAuthor;
         } else {
           const articlesQuery = query(
             collection(db, 'articles'),
             where('authors', 'array-contains', decodedName)
           );
           const articlesSnap = await getDocs(articlesQuery);
-          
-          fetchedArticles = articlesSnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
 
-          // Fallback to dummy data if no articles found in DB (for demo purposes)
-          if (fetchedArticles.length === 0) {
-            fetchedArticles = dummyArticles.filter(a => a.authors.includes(decodedName));
-          }
+          const mergedMap = new Map<string, JournalArticle>();
+          curatedForAuthor.forEach((a) => mergedMap.set(a.id, a));
+          articlesSnap.docs.forEach((doc) => {
+            mergedMap.set(doc.id, { id: doc.id, ...doc.data() } as JournalArticle);
+          });
+          fetchedArticles = Array.from(mergedMap.values());
         }
-        
-        // Sort articles by publication date (newest first)
-        fetchedArticles.sort((a: any, b: any) => 
-          new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+
+        fetchedArticles.sort(
+          (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
         );
-        
+
         setArticles(fetchedArticles);
       } catch (error) {
-        if (error instanceof Error && error.message.includes('offline')) {
-          // Silent fallback
-        } else {
-          console.error("Error fetching author articles:", error);
+        if (!(error instanceof Error && error.message.includes('offline'))) {
+          console.error('Error fetching author articles:', error);
         }
-        setArticles(dummyArticles.filter(a => a.authors.includes(decodedName)));
+        setArticles(curatedForAuthor);
       } finally {
         setLoading(false);
       }

@@ -14,13 +14,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare, Users, BarChart3, Search, Check, AlertTriangle, Flag, ShieldCheck, ShieldAlert, Star, Award, TrendingUp, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Bookmark, Save, Trash2, Library } from 'lucide-react';
+import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Eye, BookOpen, MessageSquare, Users, BarChart3, Search, Check, AlertTriangle, Flag, ShieldCheck, ShieldAlert, Star, Award, TrendingUp, Calendar, ArrowUp, ArrowDown, ArrowUpDown, Bookmark, Save, Trash2, Library, Plus, ExternalLink, Edit, Lock, Unlock, GraduationCap } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts';
 import { QRCodeSVG } from 'qrcode.react';
 import QRScanner from '@/components/QRScanner';
 import { ScanLine } from 'lucide-react';
+import {
+  MEDICAL_SPECIALTIES,
+  ARTICLE_TYPES,
+  PUBLISH_PLACEMENTS,
+  ArticleCategoryType,
+  FeaturedPlacementType,
+} from '@/data/journalData';
 
 const SubmissionProgressTracker = ({ submission }: { submission: any }) => {
   const status = submission.status;
@@ -177,11 +184,28 @@ export default function Dashboard() {
 
   const [publishedArticles, setPublishedArticles] = useState<any[]>([]);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [publishMode, setPublishMode] = useState<'submission' | 'direct' | 'edit'>('submission');
   const [submissionToPublish, setSubmissionToPublish] = useState<any | null>(null);
-  const [publishVolume, setPublishVolume] = useState('');
-  const [publishIssue, setPublishIssue] = useState('');
+  const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [publishTitle, setPublishTitle] = useState('');
+  const [publishAbstract, setPublishAbstract] = useState('');
+  const [publishAuthors, setPublishAuthors] = useState('');
+  const [publishSpecialty, setPublishSpecialty] = useState('General Medicine');
+  const [publishKeywords, setPublishKeywords] = useState('');
+  const [publishPdfUrl, setPublishPdfUrl] = useState('');
+  const [publishVolume, setPublishVolume] = useState('46');
+  const [publishIssue, setPublishIssue] = useState('2');
   const [publishDoi, setPublishDoi] = useState('');
+  const [publishAccessType, setPublishAccessType] = useState<'open_access' | 'subscription'>('open_access');
+  const [publishArticleType, setPublishArticleType] = useState<ArticleCategoryType>('Original Investigation');
+  const [publishFeaturedPlacement, setPublishFeaturedPlacement] = useState<FeaturedPlacementType>('standard');
+  const [publishReadTime, setPublishReadTime] = useState('8 min read');
+  const [publishCmeEligible, setPublishCmeEligible] = useState(false);
+  const [catalogFilterAccess, setCatalogFilterAccess] = useState<'all' | 'open_access' | 'subscription'>('all');
+  const [catalogFilterCategory, setCatalogFilterCategory] = useState<string>('all');
   const [isPublishing, setIsPublishing] = useState(false);
+  const [retractArticleId, setRetractArticleId] = useState<string | null>(null);
+  const [isRetracting, setIsRetracting] = useState(false);
 
   // Subscription management state
   const [isManageSubModalOpen, setIsManageSubModalOpen] = useState(false);
@@ -1047,52 +1071,222 @@ export default function Dashboard() {
     }, 800);
   };
 
+  const resolveAuthorNames = (submission: any) => {
+    const matchedUser = usersList.find((u) => u.uid === submission.authorUid);
+    const primaryAuthor =
+      submission.authorName ||
+      matchedUser?.displayName ||
+      (submission.authorUid === user?.uid ? profile?.displayName : '') ||
+      'Corresponding Author';
+    const coAuthorsList = Array.isArray(submission.coAuthors) ? submission.coAuthors.filter(Boolean) : [];
+    return [primaryAuthor, ...coAuthorsList].filter((v, idx, arr) => v && arr.indexOf(v) === idx).join(', ');
+  };
+
   const handleOpenPublishModal = (submission: any) => {
+    setPublishMode('submission');
     setSubmissionToPublish(submission);
-    setPublishVolume('1');
-    setPublishIssue('1');
-    setPublishDoi(`10.1234/umaj.${new Date().getFullYear()}.${submission.id.substring(0, 6)}`);
+    setEditingArticleId(null);
+    setPublishTitle(submission.title || '');
+    setPublishAbstract(submission.abstract || '');
+    setPublishAuthors(resolveAuthorNames(submission));
+    setPublishSpecialty(submission.specialty || 'General Medicine');
+    setPublishKeywords(Array.isArray(submission.keywords) ? submission.keywords.join(', ') : '');
+    const rawUrl = submission.fileUrl || '';
+    const validHttpUrl = /^https?:\/\//i.test(rawUrl)
+      ? rawUrl
+      : `https://umaj.ug/articles/${submission.id}.pdf`;
+    setPublishPdfUrl(validHttpUrl);
+    setPublishVolume('46');
+    setPublishIssue('2');
+    setPublishDoi(`10.1234/umaj.${new Date().getFullYear()}.46.2.${submission.id.substring(0, 6)}`);
+    setPublishAccessType(submission.isOpenAccess === false ? 'subscription' : 'open_access');
+    setPublishArticleType((submission.articleType as ArticleCategoryType) || 'Original Investigation');
+    setPublishFeaturedPlacement((submission.featuredPlacement as FeaturedPlacementType) || 'standard');
+    setPublishReadTime(submission.readTime || '8 min read');
+    setPublishCmeEligible(Boolean(submission.cmeEligible));
+    setIsPublishModalOpen(true);
+  };
+
+  const handleOpenDirectPublishModal = () => {
+    const year = new Date().getFullYear();
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    setPublishMode('direct');
+    setSubmissionToPublish(null);
+    setEditingArticleId(null);
+    setPublishTitle('');
+    setPublishAbstract('');
+    setPublishAuthors(profile?.displayName || '');
+    setPublishSpecialty('General Medicine');
+    setPublishKeywords('');
+    setPublishPdfUrl(`https://umaj.ug/articles/${year}-${randomSuffix.toLowerCase()}.pdf`);
+    setPublishVolume('46');
+    setPublishIssue('2');
+    setPublishDoi(`10.1234/umaj.${year}.46.2.${randomSuffix}`);
+    setPublishAccessType('open_access');
+    setPublishArticleType('Original Investigation');
+    setPublishFeaturedPlacement('standard');
+    setPublishReadTime('8 min read');
+    setPublishCmeEligible(false);
+    setIsPublishModalOpen(true);
+  };
+
+  const handleOpenEditArticleModal = (article: any) => {
+    setPublishMode('edit');
+    setSubmissionToPublish(null);
+    setEditingArticleId(article.id);
+    setPublishTitle(article.title || '');
+    setPublishAbstract(article.abstract || '');
+    setPublishAuthors(Array.isArray(article.authors) ? article.authors.join(', ') : '');
+    setPublishSpecialty(article.specialty || 'General Medicine');
+    setPublishKeywords(Array.isArray(article.keywords) ? article.keywords.join(', ') : '');
+    setPublishPdfUrl(article.pdfUrl || `https://umaj.ug/articles/${article.id}.pdf`);
+    setPublishVolume(String(article.volume || '46'));
+    setPublishIssue(String(article.issue || '2'));
+    setPublishDoi(article.doi || '');
+    setPublishAccessType(article.isOpenAccess === false ? 'subscription' : 'open_access');
+    setPublishArticleType((article.articleType as ArticleCategoryType) || 'Original Investigation');
+    setPublishFeaturedPlacement((article.featuredPlacement as FeaturedPlacementType) || 'standard');
+    setPublishReadTime(article.readTime || '8 min read');
+    setPublishCmeEligible(Boolean(article.cmeEligible));
     setIsPublishModalOpen(true);
   };
 
   const handlePublishArticle = async () => {
-    if (!submissionToPublish || !publishVolume || !publishIssue) {
-      toast.error('Please fill in all required fields');
+    const volNum = parseInt(publishVolume, 10);
+    const issNum = parseInt(publishIssue, 10);
+    const authorsList = publishAuthors
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean);
+    const keywordsList = publishKeywords
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean)
+      .slice(0, 20);
+    const normalizedPdfUrl = publishPdfUrl.trim();
+
+    if (!publishTitle.trim() || !publishAbstract.trim() || authorsList.length === 0 || isNaN(volNum) || volNum <= 0 || isNaN(issNum) || issNum <= 0) {
+      toast.error('Please fill in title, authors, abstract, volume, and issue');
       return;
     }
+
+    if (!/^https?:\/\/.+/i.test(normalizedPdfUrl)) {
+      toast.error('PDF URL must start with https:// or http://');
+      return;
+    }
+
+    const articleId =
+      publishMode === 'edit' && editingArticleId
+        ? editingArticleId
+        : publishMode === 'submission' && submissionToPublish
+        ? submissionToPublish.id
+        : `art-${Date.now()}`;
+
+    const existingArticle =
+      publishMode === 'edit'
+        ? publishedArticles.find((a) => a.id === articleId)
+        : undefined;
+
+    const articlePayload = {
+      id: articleId,
+      title: publishTitle.trim().slice(0, 490),
+      abstract: publishAbstract.trim().slice(0, 4900),
+      authors: authorsList.slice(0, 50),
+      keywords: keywordsList,
+      pdfUrl: normalizedPdfUrl,
+      doi: publishDoi.trim().slice(0, 95) || `10.1234/umaj.${new Date().getFullYear()}.${volNum}.${issNum}`,
+      volume: volNum,
+      issue: issNum,
+      publishedAt: existingArticle?.publishedAt || new Date().toISOString(),
+      views: existingArticle?.views ?? 0,
+      downloads: existingArticle?.downloads ?? 0,
+      citations: existingArticle?.citations ?? 0,
+      specialty: publishSpecialty || 'General Medicine',
+      isOpenAccess: publishAccessType === 'open_access',
+      articleType: publishArticleType || 'Original Investigation',
+      featuredPlacement: publishFeaturedPlacement || 'standard',
+      cmeEligible: publishCmeEligible,
+      readTime: publishReadTime || '8 min read',
+    };
 
     setIsPublishing(true);
     try {
       if (isDemoMode) {
         setTimeout(() => {
-          setPublishedArticles(prev => [...prev, { id: submissionToPublish.id }]);
+          if (publishMode === 'edit') {
+            setPublishedArticles((prev) =>
+              prev.map((a) => (a.id === articleId ? { ...a, ...articlePayload } : a))
+            );
+            toast.success('Published article updated (Demo Mode)');
+          } else {
+            setPublishedArticles((prev) => [
+              articlePayload,
+              ...prev.filter((a) => a.id !== articleId),
+            ]);
+            if (publishMode === 'submission' && submissionToPublish) {
+              setSubmissions((prev) =>
+                prev.map((s) =>
+                  s.id === submissionToPublish.id
+                    ? { ...s, status: 'accepted', updatedAt: new Date().toISOString() }
+                    : s
+                )
+              );
+            }
+            toast.success('Article published to the live journal catalog (Demo Mode)');
+          }
           setIsPublishModalOpen(false);
-          toast.success('Article published successfully (Demo Mode)');
           setIsPublishing(false);
-        }, 500);
+        }, 400);
         return;
       }
 
-      const newArticle = {
-        id: submissionToPublish.id,
-        title: submissionToPublish.title,
-        abstract: submissionToPublish.abstract,
-        authors: [submissionToPublish.authorUid], // Simplified for now
-        keywords: submissionToPublish.keywords || [],
-        volume: parseInt(publishVolume),
-        issue: parseInt(publishIssue),
-        doi: publishDoi,
-        pdfUrl: submissionToPublish.fileUrl || '#',
-        publishedAt: new Date().toISOString(),
-        views: 0,
-        downloads: 0
-      };
+      await setDoc(doc(db, 'articles', articleId), articlePayload, {
+        merge: publishMode === 'edit',
+      });
 
-      await setDoc(doc(db, 'articles', submissionToPublish.id), newArticle);
-      setPublishedArticles(prev => [...prev, newArticle]);
-      
+      if (publishMode === 'submission' && submissionToPublish) {
+        if (submissionToPublish.status !== 'accepted') {
+          await updateDoc(doc(db, 'submissions', submissionToPublish.id), {
+            status: 'accepted',
+            updatedAt: new Date().toISOString(),
+          });
+          setSubmissions((prev) =>
+            prev.map((s) =>
+              s.id === submissionToPublish.id
+                ? { ...s, status: 'accepted', updatedAt: new Date().toISOString() }
+                : s
+            )
+          );
+        }
+
+        if (submissionToPublish.authorUid) {
+          const notifId = `pub-${articleId}-${Date.now()}`;
+          setDoc(doc(db, 'notifications', notifId), {
+            id: notifId,
+            userId: submissionToPublish.authorUid,
+            title: 'Manuscript Published',
+            message: `Your manuscript "${articlePayload.title}" has been published in Vol ${volNum}, Issue ${issNum}.`,
+            read: false,
+            createdAt: new Date().toISOString(),
+            link: `/articles/${articleId}`,
+          }).catch(() => {});
+        }
+      }
+
+      if (publishMode === 'edit') {
+        setPublishedArticles((prev) =>
+          prev.map((a) => (a.id === articleId ? { ...a, ...articlePayload } : a))
+        );
+        toast.success('Published article updated successfully');
+      } else {
+        setPublishedArticles((prev) => [
+          articlePayload,
+          ...prev.filter((a) => a.id !== articleId),
+        ]);
+        toast.success('Article published successfully');
+      }
+
       setIsPublishModalOpen(false);
-      toast.success('Article published successfully');
     } catch (error) {
       console.error('Error publishing article:', error);
       toast.error('Failed to publish article');
@@ -1101,24 +1295,30 @@ export default function Dashboard() {
     }
   };
 
-  const handleRetractArticle = async (articleId: string) => {
-    if (!window.confirm('Are you sure you want to retract this article? It will be removed from the public articles list.')) {
-      return;
-    }
+  const handleRetractArticle = (articleId: string) => {
+    setRetractArticleId(articleId);
+  };
 
+  const confirmRetractArticle = async () => {
+    if (!retractArticleId) return;
+    setIsRetracting(true);
     try {
       if (isDemoMode) {
-        setPublishedArticles(prev => prev.filter(a => a.id !== articleId));
+        setPublishedArticles((prev) => prev.filter((a) => a.id !== retractArticleId));
         toast.success('Article retracted successfully (Demo Mode)');
+        setRetractArticleId(null);
         return;
       }
 
-      await deleteDoc(doc(db, 'articles', articleId));
-      setPublishedArticles(prev => prev.filter(a => a.id !== articleId));
+      await deleteDoc(doc(db, 'articles', retractArticleId));
+      setPublishedArticles((prev) => prev.filter((a) => a.id !== retractArticleId));
       toast.success('Article retracted successfully');
+      setRetractArticleId(null);
     } catch (error) {
       console.error('Error retracting article:', error);
       toast.error('Failed to retract article');
+    } finally {
+      setIsRetracting(false);
     }
   };
 
@@ -1660,84 +1860,293 @@ export default function Dashboard() {
           )}
 
           {isStaff && (
-            <TabsContent value="admin">
+            <TabsContent value="admin" className="space-y-6">
               <Card className="border-border bg-card shadow-sm">
-                <CardHeader className="bg-muted/40 border-b border-border">
-                  <CardTitle className="font-editorial text-xl text-foreground">All Submissions (Admin View)</CardTitle>
-                  <CardDescription>Manage all manuscripts across the platform.</CardDescription>
+                <CardHeader className="bg-muted/40 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="font-editorial text-xl text-foreground">All Submissions & Publishing (Admin Panel)</CardTitle>
+                    <CardDescription>Review submitted manuscripts, assign reviewers, and publish accepted articles to an issue.</CardDescription>
+                  </div>
+                  <Button
+                    onClick={handleOpenDirectPublishModal}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Publish New Article
+                  </Button>
                 </CardHeader>
                 <CardContent className="p-0">
                   <Table>
                     <TableHeader className="bg-muted/40">
                       <TableRow>
-                        <TableHead className="w-[300px]">Title</TableHead>
-                        <TableHead>Author UID</TableHead>
+                        <TableHead className="w-[300px]">Manuscript Title</TableHead>
+                        <TableHead>Author</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {submissions.map((sub) => (
-                        <TableRow key={sub.id}>
-                          <TableCell className="font-medium text-foreground">
-                            <div className="line-clamp-1">{sub.title}</div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-xs font-mono">
-                            {sub.authorUid.substring(0, 8)}...
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(sub.status)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {sub.status === 'accepted' && !publishedArticles.some(a => a.id === sub.id) && (
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="mr-2 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40"
-                                onClick={() => handleOpenPublishModal(sub)}
-                              >
-                                Publish
-                              </Button>
-                            )}
-                            {publishedArticles.some(a => a.id === sub.id) && (
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="mr-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40"
-                                onClick={() => handleRetractArticle(sub.id)}
-                              >
-                                Retract
-                              </Button>
-                            )}
-                            {['submitted', 'under_review'].includes(sub.status) && (
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="mr-2"
+                      {submissions.length > 0 ? submissions.map((sub) => {
+                        const isPublished = publishedArticles.some((a) => a.id === sub.id);
+                        const authorDisplay =
+                          sub.authorName ||
+                          usersList.find((u) => u.uid === sub.authorUid)?.displayName ||
+                          `${sub.authorUid?.substring(0, 8)}...`;
+                        return (
+                          <TableRow key={sub.id}>
+                            <TableCell className="font-medium text-foreground">
+                              <div className="line-clamp-1">{sub.title}</div>
+                              {sub.specialty && (
+                                <span className="text-xs text-muted-foreground">{sub.specialty}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs">
+                              <div className="font-medium text-foreground">{authorDisplay}</div>
+                              <div className="font-mono text-[11px]">{sub.authorUid?.substring(0, 8)}...</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {getStatusBadge(sub.status)}
+                                {isPublished && (
+                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800">
+                                    Live
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right whitespace-nowrap">
+                              {!isPublished && sub.status !== 'rejected' && (
+                                <Button
+                                  variant={sub.status === 'accepted' ? 'default' : 'outline'}
+                                  size="sm"
+                                  className={
+                                    sub.status === 'accepted'
+                                      ? 'mr-2 bg-emerald-600 hover:bg-emerald-700 text-white'
+                                      : 'mr-2 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40'
+                                  }
+                                  onClick={() => handleOpenPublishModal(sub)}
+                                >
+                                  <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+                                  Publish
+                                </Button>
+                              )}
+                              {isPublished && (
+                                <>
+                                  <Link
+                                    to={`/articles/${sub.id}`}
+                                    className={`${buttonVariants({ variant: 'outline', size: 'sm' })} mr-2`}
+                                  >
+                                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                                    View
+                                  </Link>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="mr-2 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40"
+                                    onClick={() => handleRetractArticle(sub.id)}
+                                  >
+                                    Retract
+                                  </Button>
+                                </>
+                              )}
+                              {['submitted', 'under_review'].includes(sub.status) && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="mr-2"
+                                  onClick={() => {
+                                    setSubmissionToAssign(sub);
+                                    setIsAssignReviewerOpen(true);
+                                  }}
+                                >
+                                  Assign Reviewer
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-primary"
                                 onClick={() => {
-                                  setSubmissionToAssign(sub);
-                                  setIsAssignReviewerOpen(true);
+                                  setSelectedSubmission(sub);
+                                  setIsDetailsOpen(true);
                                 }}
                               >
-                                Assign Reviewer
+                                Manage
                               </Button>
-                            )}
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-primary"
-                              onClick={() => {
-                                setSelectedSubmission(sub);
-                                setIsDetailsOpen(true);
-                              }}
-                            >
-                              Manage
-                            </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                            No manuscripts found. Use "Publish New Article" above to publish directly.
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card shadow-sm">
+                <CardHeader className="bg-muted/40 border-b border-border flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="font-editorial text-xl text-foreground">Published Articles Catalog</CardTitle>
+                    <CardDescription>Filter by access model or editorial category, update issue placement, or retract live articles.</CardDescription>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1 bg-background border border-border rounded-md p-0.5">
+                      {(
+                        [
+                          { id: 'all', label: 'All' },
+                          { id: 'open_access', label: 'Open Access' },
+                          { id: 'subscription', label: 'Subscription' },
+                        ] as const
+                      ).map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setCatalogFilterAccess(opt.id)}
+                          className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                            catalogFilterAccess === opt.id
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <Select value={catalogFilterCategory} onValueChange={(v) => setCatalogFilterCategory(v || 'all')}>
+                      <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
+                        <SelectValue placeholder="All Categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {ARTICLE_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs font-mono tabular-nums text-muted-foreground ml-1">
+                      {publishedArticles.length} Total
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {(() => {
+                    const filteredCatalog = publishedArticles.filter((art) => {
+                      const accessMatch =
+                        catalogFilterAccess === 'all' ||
+                        (catalogFilterAccess === 'open_access' && art.isOpenAccess !== false) ||
+                        (catalogFilterAccess === 'subscription' && art.isOpenAccess === false);
+                      const catMatch =
+                        catalogFilterCategory === 'all' ||
+                        (art.articleType || 'Original Investigation') === catalogFilterCategory;
+                      return accessMatch && catMatch;
+                    });
+                    return filteredCatalog.length > 0 ? (
+                      <Table>
+                        <TableHeader className="bg-muted/40">
+                          <TableRow>
+                            <TableHead className="w-[320px]">Article Title & Metadata</TableHead>
+                            <TableHead>Category & Access</TableHead>
+                            <TableHead>Issue</TableHead>
+                            <TableHead>Published</TableHead>
+                            <TableHead>Reach</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredCatalog.map((art) => (
+                            <TableRow key={art.id}>
+                              <TableCell>
+                                <div className="font-medium text-foreground line-clamp-1">{art.title || 'Untitled Article'}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {Array.isArray(art.authors) && art.authors.length > 0 ? art.authors.join(', ') : 'UMAJ Author'}
+                                  {art.doi ? <span className="font-mono ml-2">· {art.doi}</span> : null}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-1 text-xs">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className={`font-semibold ${
+                                      art.articleType === 'Lead Investigation' || art.featuredPlacement === 'lead_investigation'
+                                        ? 'text-red-700 dark:text-red-400'
+                                        : 'text-foreground'
+                                    }`}>
+                                      {art.articleType || 'Original Investigation'}
+                                    </span>
+                                    {art.featuredPlacement === 'editors_pick' && (
+                                      <span className="text-[11px] font-medium text-primary">· Editor&apos;s Pick</span>
+                                    )}
+                                    {art.featuredPlacement === 'special_issue' && (
+                                      <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">· Special Issue</span>
+                                    )}
+                                    {art.cmeEligible && (
+                                      <span className="text-[11px] font-medium text-blue-700 dark:text-blue-400">· CME</span>
+                                    )}
+                                  </div>
+                                  {art.isOpenAccess !== false ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                                      <Unlock className="h-3 w-3" /> Open Access
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                                      <Lock className="h-3 w-3" /> Subscription
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">
+                                Vol {art.volume || '—'}, Issue {art.issue || '—'}
+                              </TableCell>
+                              <TableCell className="text-xs tabular-nums text-muted-foreground">
+                                {art.publishedAt ? format(new Date(art.publishedAt), 'MMM d, yyyy') : '—'}
+                              </TableCell>
+                              <TableCell className="text-xs font-mono tabular-nums text-muted-foreground">
+                                {(art.views || 0).toLocaleString()} views · {(art.downloads || 0).toLocaleString()} dl
+                              </TableCell>
+                              <TableCell className="text-right whitespace-nowrap">
+                                <Link
+                                  to={`/articles/${art.id}`}
+                                  className={`${buttonVariants({ variant: 'ghost', size: 'sm' })} mr-1 text-primary`}
+                                >
+                                  <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                                  View
+                                </Link>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="mr-2"
+                                  onClick={() => handleOpenEditArticleModal(art)}
+                                >
+                                  <Edit className="mr-1 h-3.5 w-3.5" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/40"
+                                  onClick={() => handleRetractArticle(art.id)}
+                                >
+                                  Retract
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="p-8 text-center text-muted-foreground">
+                        {publishedArticles.length === 0
+                          ? 'No custom articles have been published yet. Click "Publish New Article" or publish an accepted submission above.'
+                          : 'No published articles match the selected access or category filter.'}
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -2912,67 +3321,292 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Publish Article Modal */}
+      {/* Publish / Edit Article Modal */}
       <Dialog open={isPublishModalOpen} onOpenChange={setIsPublishModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Publish Article</DialogTitle>
+            <DialogTitle className="font-editorial text-xl">
+              {publishMode === 'edit'
+                ? 'Edit Published Article'
+                : publishMode === 'direct'
+                ? 'Publish New Article'
+                : 'Publish Manuscript to Journal'}
+            </DialogTitle>
             <DialogDescription>
-              Assign this manuscript to a volume and issue to publish it.
+              {publishMode === 'edit'
+                ? 'Update category, access tier, issue assignment, DOI, or metadata for this live article.'
+                : publishMode === 'direct'
+                ? 'Directly publish a curated or special editorial article with access controls and category classification.'
+                : 'Classify access rights, editorial category, and issue placement before publishing immediately.'}
             </DialogDescription>
           </DialogHeader>
-          
-          {submissionToPublish && (
-            <div className="space-y-4 py-4">
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">Manuscript</h4>
-                <p className="text-sm font-medium text-foreground line-clamp-2">{submissionToPublish.title}</p>
+
+          <div className="space-y-4 py-2">
+            {publishMode === 'submission' && submissionToPublish && submissionToPublish.status !== 'accepted' && (
+              <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+                Note: This manuscript is currently marked <strong className="capitalize">{submissionToPublish.status.replace('_', ' ')}</strong>. Publishing will automatically mark the submission as <strong>Accepted</strong>.
               </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="volume">Volume</Label>
-                  <Input 
-                    id="volume" 
-                    type="number" 
-                    value={publishVolume} 
-                    onChange={(e) => setPublishVolume(e.target.value)} 
-                    min="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="issue">Issue</Label>
-                  <Input 
-                    id="issue" 
-                    type="number" 
-                    value={publishIssue} 
-                    onChange={(e) => setPublishIssue(e.target.value)} 
-                    min="1"
-                  />
-                </div>
+            )}
+
+            {/* Access & License Tier Selector */}
+            <div className="space-y-1.5">
+              <Label>Access &amp; Licensing Model *</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPublishAccessType('open_access')}
+                  className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                    publishAccessType === 'open_access'
+                      ? 'border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/35 dark:border-emerald-500'
+                      : 'border-border bg-card hover:bg-muted/40'
+                  }`}
+                >
+                  <Unlock className={`h-4 w-4 mt-0.5 shrink-0 ${publishAccessType === 'open_access' ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`} />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Open Access</p>
+                    <p className="text-xs text-muted-foreground">Freely accessible full text &amp; PDF (CC BY 4.0)</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPublishAccessType('subscription')}
+                  className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+                    publishAccessType === 'subscription'
+                      ? 'border-amber-600 bg-amber-50/70 dark:bg-amber-950/35 dark:border-amber-500'
+                      : 'border-border bg-card hover:bg-muted/40'
+                  }`}
+                >
+                  <Lock className={`h-4 w-4 mt-0.5 shrink-0 ${publishAccessType === 'subscription' ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`} />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Subscription</p>
+                    <p className="text-xs text-muted-foreground">Subscriber &amp; institutional access required</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Category, Editorial Placement & Read Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="publish-article-type">Publish Category *</Label>
+                <Select
+                  value={publishArticleType}
+                  onValueChange={(v) => {
+                    const selected = (v || 'Original Investigation') as ArticleCategoryType;
+                    setPublishArticleType(selected);
+                    if (selected === 'Lead Investigation') {
+                      setPublishFeaturedPlacement('lead_investigation');
+                    }
+                  }}
+                >
+                  <SelectTrigger id="publish-article-type" className="w-full">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ARTICLE_TYPES.map((typeOpt) => (
+                      <SelectItem key={typeOpt} value={typeOpt}>
+                        {typeOpt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="doi">DOI (Optional)</Label>
-                <Input 
-                  id="doi" 
-                  value={publishDoi} 
-                  onChange={(e) => setPublishDoi(e.target.value)} 
+              <div className="space-y-1.5">
+                <Label htmlFor="publish-placement">Editorial Placement</Label>
+                <Select
+                  value={publishFeaturedPlacement}
+                  onValueChange={(v) => setPublishFeaturedPlacement((v || 'standard') as FeaturedPlacementType)}
+                >
+                  <SelectTrigger id="publish-placement" className="w-full">
+                    <SelectValue placeholder="Select placement" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PUBLISH_PLACEMENTS.map((pl) => (
+                      <SelectItem key={pl.value} value={pl.value}>
+                        {pl.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="publish-readtime">Estimated Read Time</Label>
+                <Select value={publishReadTime} onValueChange={(v) => setPublishReadTime(v || '8 min read')}>
+                  <SelectTrigger id="publish-readtime" className="w-full">
+                    <SelectValue placeholder="Select read time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="4 min read">4 min read</SelectItem>
+                    <SelectItem value="6 min read">6 min read</SelectItem>
+                    <SelectItem value="8 min read">8 min read</SelectItem>
+                    <SelectItem value="10 min read">10 min read</SelectItem>
+                    <SelectItem value="12 min read">12 min read</SelectItem>
+                    <SelectItem value="15 min read">15 min read</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="publish-title">Article Title *</Label>
+              <Input
+                id="publish-title"
+                value={publishTitle}
+                onChange={(e) => setPublishTitle(e.target.value)}
+                placeholder="Enter full peer-reviewed article title"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="publish-authors">Authors (comma-separated) *</Label>
+                <Input
+                  id="publish-authors"
+                  value={publishAuthors}
+                  onChange={(e) => setPublishAuthors(e.target.value)}
+                  placeholder="Dr. Jane Namukasa, Dr. Peter Okello"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="publish-specialty">Specialty</Label>
+                <Select value={publishSpecialty} onValueChange={(v) => setPublishSpecialty(v || 'General Medicine')}>
+                  <SelectTrigger id="publish-specialty" className="w-full">
+                    <SelectValue placeholder="Select specialty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MEDICAL_SPECIALTIES.map((sp) => (
+                      <SelectItem key={sp} value={sp}>
+                        {sp}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="publish-abstract">Abstract *</Label>
+              <Textarea
+                id="publish-abstract"
+                value={publishAbstract}
+                onChange={(e) => setPublishAbstract(e.target.value)}
+                placeholder="Background, Methods, Results, Conclusion..."
+                className="min-h-[110px]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="volume">Volume *</Label>
+                <Input
+                  id="volume"
+                  type="number"
+                  value={publishVolume}
+                  onChange={(e) => setPublishVolume(e.target.value)}
+                  min="1"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="issue">Issue *</Label>
+                <Input
+                  id="issue"
+                  type="number"
+                  value={publishIssue}
+                  onChange={(e) => setPublishIssue(e.target.value)}
+                  min="1"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="doi">DOI</Label>
+                <Input
+                  id="doi"
+                  value={publishDoi}
+                  onChange={(e) => setPublishDoi(e.target.value)}
+                  placeholder="10.1234/umaj.2026.46.2.01"
                 />
               </div>
             </div>
-          )}
 
-          <DialogFooter>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="publish-keywords">Keywords (comma-separated)</Label>
+                <Input
+                  id="publish-keywords"
+                  value={publishKeywords}
+                  onChange={(e) => setPublishKeywords(e.target.value)}
+                  placeholder="Malaria, Public Health, Uganda"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="publish-pdf">Manuscript PDF URL *</Label>
+                <Input
+                  id="publish-pdf"
+                  type="url"
+                  value={publishPdfUrl}
+                  onChange={(e) => setPublishPdfUrl(e.target.value)}
+                  placeholder="https://umaj.ug/articles/article.pdf"
+                />
+              </div>
+            </div>
+
+            {/* Additional Journal Options */}
+            <label className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={publishCmeEligible}
+                onChange={(e) => setPublishCmeEligible(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <div className="text-xs">
+                <span className="font-semibold text-foreground inline-flex items-center gap-1.5">
+                  <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                  Eligible for Continuing Medical Education (1.0 CME Credit)
+                </span>
+                <p className="text-muted-foreground mt-0.5">
+                  Marks this article for clinician continuing professional development verification.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setIsPublishModalOpen(false)} disabled={isPublishing}>
               Cancel
             </Button>
-            <Button 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white" 
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={handlePublishArticle}
               disabled={isPublishing}
             >
-              {isPublishing ? 'Publishing...' : 'Publish Article'}
+              {isPublishing
+                ? 'Saving...'
+                : publishMode === 'edit'
+                ? 'Save Changes'
+                : 'Publish Article'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Retract Article Confirmation Modal */}
+      <Dialog open={Boolean(retractArticleId)} onOpenChange={(open) => !open && setRetractArticleId(null)}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="font-editorial text-xl text-red-700 dark:text-red-400">
+              Retract Published Article
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to retract this article? It will be removed from the public journal catalog immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRetractArticleId(null)} disabled={isRetracting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmRetractArticle} disabled={isRetracting}>
+              {isRetracting ? 'Retracting...' : 'Confirm Retract'}
             </Button>
           </DialogFooter>
         </DialogContent>
